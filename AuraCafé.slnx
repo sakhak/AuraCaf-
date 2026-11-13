@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="AuraCafé.API/AuraCafé.API.csproj" />
+  <Project Path="AuraCafé.Web/AuraCafé.Web.csproj" />
+</Solution>

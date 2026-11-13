@@ -1,0 +1,5 @@
+dotnet restore
+dotnet build
+
+dotnet run --project AuraCafé.API --urls http://localhost:5100
+dotnet run --project AuraCafé.Web --urls http://localhost:5200

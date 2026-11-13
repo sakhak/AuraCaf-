@@ -1,0 +1,25 @@
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# .NET build output
+bin/
+obj/
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Local configuration and secrets
+appsettings.Development.json
+.env
+.env.*
+
+# SQLite database files
+*.db
+*.db-shm
+*.db-wal
