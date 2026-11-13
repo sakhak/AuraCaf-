@@ -1,0 +1,101 @@
+
+@page
+@model AuraCafé.Web.Pages.Products.CreateModel
+
+@{
+    ViewData["Title"] = "Add Product";
+}
+
+<div class="container py-4" style="max-width: 800px;">
+    <a asp-page="./Index" class="text-decoration-none">
+        ← Back to Products
+    </a>
+
+    <h2 class="fw-bold mt-3 mb-4">Add New Product</h2>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+            @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+            {
+                <div class="alert alert-danger">
+                    @Model.ErrorMessage
+                </div>
+            }
+
+            <form method="post">
+                <div asp-validation-summary="ModelOnly"
+                     class="text-danger mb-3"></div>
+
+                <div class="mb-3">
+                    <label asp-for="Product.Name" class="form-label">
+                        Product Name
+                    </label>
+                    <input asp-for="Product.Name"
+                           class="form-control"
+                           placeholder="Example: Iced Latte" />
+                    <span asp-validation-for="Product.Name"
+                          class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Product.Description"
+                           class="form-label">Description</label>
+                    <textarea asp-for="Product.Description"
+                              class="form-control"
+                              rows="3"></textarea>
+                    <span asp-validation-for="Product.Description"
+                          class="text-danger"></span>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="Product.PriceCents"
+                               class="form-label">Price (USD cents)</label>
+                        <input asp-for="Product.PriceCents"
+                               class="form-control"
+                               type="number"
+                               min="1" />
+                        <div class="form-text">
+                            Example: 275 = $2.75
+                        </div>
+                        <span asp-validation-for="Product.PriceCents"
+                              class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="Product.CategoryId"
+                               class="form-label">Category</label>
+                        <select asp-for="Product.CategoryId"
+                                class="form-select">
+                            <option value="0">Select category</option>
+                            @foreach (var category in Model.Categories)
+                            {
+                                <option value="@category.Id">
+                                    @category.Name
+                                </option>
+                            }
+                        </select>
+                        <span asp-validation-for="Product.CategoryId"
+                              class="text-danger"></span>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2 mt-3">
+                    <button type="submit"
+                            class="btn btn-primary"
+                            disabled="@(Model.Categories.Count == 0)">
+                        Save Product
+                    </button>
+                    <a asp-page="./Index"
+                       class="btn btn-outline-secondary">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

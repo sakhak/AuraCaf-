@@ -1,0 +1,100 @@
+
+@page "{id:int}"
+@model AuraCafé.Web.Pages.Products.EditModel
+
+@{
+    ViewData["Title"] = "Edit Product";
+}
+
+<div class="container py-4" style="max-width: 800px;">
+    <a asp-page="./Index" class="text-decoration-none">
+        ← Back to Products
+    </a>
+
+    <h2 class="fw-bold mt-3 mb-4">Edit Product</h2>
+
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="alert alert-danger">
+            @Model.ErrorMessage
+        </div>
+    }
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+            <form method="post">
+                <div asp-validation-summary="ModelOnly"
+                     class="text-danger"></div>
+
+                <div class="mb-3">
+                    <label asp-for="Product.Name" class="form-label"></label>
+                    <input asp-for="Product.Name" class="form-control" />
+                    <span asp-validation-for="Product.Name"
+                          class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Product.Description"
+                           class="form-label"></label>
+                    <textarea asp-for="Product.Description"
+                              class="form-control"
+                              rows="3"></textarea>
+                    <span asp-validation-for="Product.Description"
+                          class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Product.PriceCents"
+                           class="form-label">Price (USD cents)</label>
+                    <input asp-for="Product.PriceCents"
+                           type="number"
+                           min="1"
+                           class="form-control" />
+                    <span asp-validation-for="Product.PriceCents"
+                          class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="Product.CategoryId"
+                           class="form-label">Category</label>
+                    <select asp-for="Product.CategoryId"
+                            class="form-select">
+                        <option value="0">Select category</option>
+                        @foreach (var category in Model.Categories)
+                        {
+                            <option value="@category.Id">
+                                @category.Name
+                            </option>
+                        }
+                    </select>
+                    <span asp-validation-for="Product.CategoryId"
+                          class="text-danger"></span>
+                </div>
+
+                <div class="form-check mb-4">
+                    <input asp-for="Product.IsAvailable"
+                           class="form-check-input" />
+                    <label asp-for="Product.IsAvailable"
+                           class="form-check-label">
+                        Available for sale
+                    </label>
+                </div>
+
+                <button type="submit"
+                        class="btn btn-primary"
+                        disabled="@(Model.Categories.Count == 0)">
+                    Save Changes
+                </button>
+
+                <a asp-page="./Index"
+                   class="btn btn-outline-secondary">
+                    Cancel
+                </a>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
