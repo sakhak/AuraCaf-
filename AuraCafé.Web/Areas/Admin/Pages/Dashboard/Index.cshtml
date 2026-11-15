@@ -1,0 +1,60 @@
+@page
+@model AuraCafé.Web.Areas.Admin.Pages.Dashboard.IndexModel
+@using AuraCafé.Web.Models
+@using System.Globalization
+@{ ViewData["Title"] = "Admin Dashboard"; }
+<link rel="stylesheet" href="~/css/dashboard.css" asp-append-version="true" />
+<div class="dashboard">
+    <header class="dash-heading"><div><p class="dash-eyebrow">YOUR CAF&#201;, AT A GLANCE</p><h1>Welcome back, @Model.AdminName<span class="dash-heading-dot">.</span></h1><p class="text-muted mb-0">A clear view of the day, from the first cup to the last checkout.</p></div><div class="dash-date"><span class="dash-date-icon" aria-hidden="true">&#9728;</span><div><strong>@ReportDisplay.Today.ToString("dddd, dd MMM", CultureInfo.InvariantCulture)</strong><small>Asia/Bangkok &#183; UTC+07:00</small></div></div></header>
+    <section class="dash-banner"><div><span class="dash-eyebrow">TODAY AT AURA</span><h2>Good days start with a clear picture.</h2><p>Keep an eye on sales, care for your team, and make every cup count.</p><a asp-page="/Reports/Index" class="btn btn-primary">Explore sales reports <span aria-hidden="true">&#8599;</span></a></div><div class="dash-banner-mark" aria-hidden="true"><partial name="/Pages/Shared/_CafeMark.cshtml" /></div></section>
+    @if (Model.ErrorMessage is not null) { <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div> }
+    @if (Model.Report is { } report)
+    {
+        <div class="dash-kpis">
+            <article class="dash-card dash-kpi"><div class="dash-kpi-heading"><h2>Today's revenue</h2><span aria-hidden="true" class="dash-icon">$</span></div><p class="dash-number">@ReportDisplay.Money(report.RevenueCents)</p><small>Completed payments today</small></article>
+            <article class="dash-card dash-kpi"><div class="dash-kpi-heading"><h2>Today's paid orders</h2><span aria-hidden="true" class="dash-icon">&#10003;</span></div><p class="dash-number">@report.PaidOrders.ToString("N0")</p><small>Confirmed payments today</small></article>
+            <article class="dash-card dash-kpi"><div class="dash-kpi-heading"><h2>Orders created today</h2><span aria-hidden="true" class="dash-icon">&#9776;</span></div><p class="dash-number">@report.OrdersCreated.ToString("N0")</p><small>Includes unpaid orders</small></article>
+            <article class="dash-card dash-kpi"><div class="dash-kpi-heading"><h2>Pending orders now</h2><span aria-hidden="true" class="dash-icon dash-icon-warm">&#9684;</span></div><p class="dash-number">@report.PendingOrders.ToString("N0")</p><small>All dates; awaiting payment</small></article>
+        </div>
+    }
+    <div class="dash-main-grid">
+        <section class="dash-card"><div class="dash-section-heading"><div><p class="dash-eyebrow">SALES OVERVIEW</p><h2>The last seven days</h2></div><span class="dash-chip">USD</span></div>
+            @if (Model.Week is { } week)
+            {
+                var today = ReportDisplay.Today;
+                var days = Enumerable.Range(0, 7).Select(i => today.AddDays(i - 6)).ToList();
+                var values = days.Select(day => week.Daily.Where(d => DateOnly.FromDateTime(d.Date) == day).Sum(d => d.RevenueCents)).ToList();
+                var maximum = Math.Max(1L, values.Max());
+                <p class="dash-chart-total">@ReportDisplay.Money(week.RevenueCents)<span>completed payment revenue</span></p>
+                @if (values.All(v => v == 0)) { <p class="dash-empty-note">No completed sales in this period. Your sales will appear here.</p> }
+                <div class="dash-chart" role="img" aria-label="Completed payment revenue by day. Exact values follow in the table.">
+                    @for (var i = 0; i < days.Count; i++)
+                    {
+                        var height = (values[i] * 100m / maximum).ToString("0.##", CultureInfo.InvariantCulture);
+                        <div class="dash-chart-column"><div class="dash-chart-track"><span class="dash-chart-bar @(i == 6 ? "is-today" : "")" style="height: @(height)%" title="@days[i].ToString("dd MMM"): @ReportDisplay.Money(values[i])"></span></div><span>@days[i].ToString("ddd", CultureInfo.InvariantCulture)</span></div>
+                    }
+                </div>
+                <details class="dash-chart-details"><summary>View daily sales figures</summary><div class="table-responsive"><table class="table table-sm"><caption class="visually-hidden">Seven-day completed payment revenue</caption><thead><tr><th scope="col">Date</th><th scope="col" class="text-end">Revenue (USD)</th></tr></thead><tbody>@for (var i = 0; i < days.Count; i++) { <tr><th scope="row">@days[i].ToString("dd MMM yyyy")</th><td class="text-end">@ReportDisplay.Money(values[i])</td></tr> }</tbody></table></div></details>
+            }
+            else { <div class="dash-empty-note" role="status">@Model.ChartError</div> }
+        </section>
+        <section class="dash-card"><div class="dash-section-heading"><div><p class="dash-eyebrow">CUSTOMER FAVORITES</p><h2>Today's popular products</h2></div><a asp-area="" asp-page="/Products/Index" class="dash-text-link">Menu &#8599;</a></div>
+            @if (Model.Report is not { } productsReport) { <p class="dash-empty-note">Product sales are currently unavailable.</p> }
+            else if (productsReport.Products.Count == 0) { <div class="dash-empty"><span aria-hidden="true"><partial name="/Pages/Shared/_CafeMark.cshtml" /></span><h3>Favorites in the making</h3><p>No completed sales today. Your best sellers will appear after checkout.</p></div> }
+            else
+            {
+                <ol class="dash-product-list">@foreach (var product in productsReport.Products.OrderByDescending(p => p.Quantity).ThenByDescending(p => p.RevenueCents).Take(5)) { <li><span class="dash-product-icon" aria-hidden="true"><partial name="/Pages/Shared/_CafeMark.cshtml" /></span><div><strong>@product.Name</strong><small>@product.Quantity.ToString("N0") sold today</small></div><span class="dash-product-revenue">@ReportDisplay.Money(product.RevenueCents)</span></li> }</ol>
+            }
+        </section>
+    </div>
+    @if (Model.Report is { } cash)
+    {
+        <section class="dash-card dash-cash"><div><p class="dash-eyebrow">TODAY'S CASH FLOW</p><h2>Every payment, accounted for.</h2><p class="text-muted small mb-0">Opening floats and unpaid orders are excluded from revenue.</p></div><dl><div><dt>Cash received</dt><dd>@ReportDisplay.Money(cash.CashReceivedCents)</dd></div><div><dt>Change given</dt><dd>@ReportDisplay.Money(cash.ChangeCents)</dd></div></dl></section>
+        <p class="dash-updated">Today's figures generated @ReportDisplay.Local(cash.GeneratedAtUtc) (UTC+07:00).</p>
+    }
+    <section aria-labelledby="quickHeading"><div class="dash-section-heading"><h2 id="quickHeading">A few things you can do</h2><span class="small text-muted">Your daily workspace</span></div><div class="dash-shortcuts">
+        <a asp-page="/Shifts/Index" class="dash-shortcut"><span class="dash-icon" aria-hidden="true">&#9687;</span><div><strong>Monitor Shifts</strong><small>See your team's shift activity</small></div><span aria-hidden="true">&#8599;</span></a>
+        <a asp-page="/Payments/Index" class="dash-shortcut"><span class="dash-icon" aria-hidden="true">$</span><div><strong>Payment History</strong><small>Review confirmed payments</small></div><span aria-hidden="true">&#8599;</span></a>
+        <a asp-page="/Inventory/Index" class="dash-shortcut"><span class="dash-icon" aria-hidden="true">&#9638;</span><div><strong>Inventory</strong><small>Keep your ingredients in check</small></div><span aria-hidden="true">&#8599;</span></a>
+    </div></section>
+</div>

@@ -1,0 +1,29 @@
+@page "{id:int}"
+@model AuraCafé.Web.Areas.Admin.Pages.Shifts.ReconciliationModel
+@using AuraCafé.Web.Models
+@{ ViewData["Title"] = "Shift Reconciliation"; }
+<a asp-page="./Index" class="btn btn-outline-secondary mb-3">Back to Shifts</a>
+<h1>Shift Reconciliation</h1>
+@if (Model.ErrorMessage is not null) { <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div> }
+@if (Model.Cash is { } cash)
+{
+    <section class="portal-card">
+        <h2 class="h4">Shift #@cash.WorkShiftId · @cash.CashierName</h2>
+        <p>Status: @cash.ShiftStatus. Amounts in USD.</p>
+        <dl class="row">
+            <dt class="col-sm-6">Opening float</dt><dd class="col-sm-6">@(cash.OpeningCashCents.HasValue ? ReportDisplay.Money(cash.OpeningCashCents.Value) : "Not recorded")</dd>
+            <dt class="col-sm-6">Completed cash sales</dt><dd class="col-sm-6">@ReportDisplay.Money(cash.RevenueCents) (@cash.PaidOrders paid orders)</dd>
+            <dt class="col-sm-6">Cash received</dt><dd class="col-sm-6">@ReportDisplay.Money(cash.CashReceivedCents)</dd>
+            <dt class="col-sm-6">Change given</dt><dd class="col-sm-6">@ReportDisplay.Money(cash.ChangeCents)</dd>
+            <dt class="col-sm-6">Expected full drawer</dt><dd class="col-sm-6">@(cash.ExpectedCashCents.HasValue ? ReportDisplay.Money(cash.ExpectedCashCents.Value) : "Unavailable without opening float")</dd>
+            <dt class="col-sm-6">Counted full drawer</dt><dd class="col-sm-6">@(cash.CountedCashCents.HasValue ? ReportDisplay.Money(cash.CountedCashCents.Value) : "Not submitted")</dd>
+            <dt class="col-sm-6">Difference</dt><dd class="col-sm-6">@(cash.DifferenceCents.HasValue ? ReportDisplay.Money(cash.DifferenceCents.Value) : "Not submitted")</dd>
+            <dt class="col-sm-6">Opening Khmer riel</dt><dd class="col-sm-6">@(cash.OpeningCashRiel.HasValue ? ReportDisplay.Riel(cash.OpeningCashRiel.Value) : "Not recorded")</dd>
+            <dt class="col-sm-6">Expected Khmer riel</dt><dd class="col-sm-6">@(cash.ExpectedCashRiel.HasValue ? ReportDisplay.Riel(cash.ExpectedCashRiel.Value) : "Not recorded")</dd>
+            <dt class="col-sm-6">Counted Khmer riel</dt><dd class="col-sm-6">@(cash.CountedCashRiel.HasValue ? ReportDisplay.Riel(cash.CountedCashRiel.Value) : "Not submitted")</dd>
+            <dt class="col-sm-6">KHR difference</dt><dd class="col-sm-6">@(cash.DifferenceCashRiel.HasValue ? ReportDisplay.Riel(cash.DifferenceCashRiel.Value) : "Not submitted")</dd>
+        </dl>
+        @if (cash.SubmittedAtUtc.HasValue) { <p>Submitted by @cash.CashierName (#@cash.StaffId) on @ReportDisplay.Local(cash.SubmittedAtUtc.Value) (Asia/Bangkok).</p><p>@cash.Note</p> }
+        <p class="text-muted mb-0">Read-only. Positive difference is overage; negative is shortage. No opening amount or drawer count is invented for legacy shifts.</p>
+    </section>
+}

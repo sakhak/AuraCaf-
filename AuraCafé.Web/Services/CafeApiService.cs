@@ -1,4 +1,4 @@
-﻿using System.Net.Http.Json;
+using System.Net.Http.Json;
 using AuraCafé.Web.Models;
 
 namespace AuraCafé.Web.Services;

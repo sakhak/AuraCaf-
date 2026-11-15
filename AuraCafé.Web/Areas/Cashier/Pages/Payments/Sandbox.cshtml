@@ -1,0 +1,45 @@
+@page "{orderId:int}"
+@model AuraCafé.Web.Areas.Cashier.Pages.Payments.SandboxModel
+@using AuraCafé.Web.Models
+@{ ViewData["Title"] = "Bakong sandbox checkout"; }
+<link rel="stylesheet" href="~/css/receipt.css" asp-append-version="true" />
+<header class="mb-4"><h1 class="h2">Bakong test checkout</h1><p class="text-muted">Dynamic USD QR with server-side verification.</p></header>
+<div class="alert alert-warning"><strong>SANDBOX &#183; TEST PAYMENTS ONLY.</strong> Use your Bakong test environment. Test confirmations never mark a real order Paid, enter sales reports or change drawer cash.</div>
+@if (Model.ErrorMessage is not null) { <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div> }
+@if (Model.Order is { } order)
+{
+    <div class="portal-card" style="max-width: 640px; margin-inline: auto;">
+        <div class="d-flex flex-wrap justify-content-between gap-3 mb-4"><div><h2 class="h5">@order.OrderNumber</h2><p class="text-muted small mb-0">Sandbox verification</p></div><strong class="h4">@ReportDisplay.Money(order.TotalCents)</strong></div>
+        @if (Model.Intent is { } intent)
+        {
+            <p class="small text-muted">Test receiver: <strong>@intent.ReceiverAccountId</strong><br />Checkout: @intent.Id</p>
+            @if (intent.Status == "TestVerified")
+            {
+                <div class="alert alert-success" role="status"><strong>Test payment verified by Bakong.</strong> This is a sandbox result. The real order remains pending.</div>
+                <p class="small">Transaction reference: <code style="overflow-wrap: anywhere">@intent.TransactionHash</code></p>
+            }
+            else
+            {
+                @if (intent.QrImageDataUrl is not null)
+                {
+                    <img src="@intent.QrImageDataUrl" alt="Order-specific USD sandbox KHQR. Use only a Bakong test banking app." class="img-fluid d-block mx-auto" style="max-width: min(100%, 360px)" />
+                    <p class="text-center small text-muted">Expires @ReportDisplay.Local(intent.ExpiresAtUtc) (UTC+07:00)</p>
+                }
+                else { <div class="alert alert-warning">This QR has expired. Check the original transaction before any further attempt. A replacement QR is not created automatically.</div> }
+                <p id="sandboxStatus" role="status" aria-live="polite">@(intent.Status == "Expired" ? "QR expired. You can still check for an earlier payment." : "Waiting for a test payment. Checking every five seconds.")</p>
+                <form method="post" asp-page-handler="Check" id="sandboxCheck" data-auto-check="@(intent.Status == "Pending" ? "true" : "false")">
+                    <button class="btn btn-primary" type="submit">Check test payment</button>
+                </form>
+                <noscript><p class="small text-muted mt-3">Use Check test payment to verify manually. JavaScript enables automatic checking.</p></noscript>
+            }
+        }
+        else if (order.Status == "Pending")
+        {
+            <p>Create a unique sandbox QR for the server-confirmed order total. Your saved static merchant image is not used for automatic verification.</p>
+            <form method="post" asp-page-handler="Start"><button class="btn btn-primary" type="submit">Generate test QR</button></form>
+        }
+        else { <p>This order is no longer pending. No sandbox QR will be generated.</p> }
+        <a asp-page="/Payments/Create" asp-route-orderId="@order.Id" class="btn btn-outline-secondary mt-3">Return to checkout</a>
+    </div>
+}
+@section Scripts { <script src="~/js/bakong-sandbox.js" asp-append-version="true"></script> }

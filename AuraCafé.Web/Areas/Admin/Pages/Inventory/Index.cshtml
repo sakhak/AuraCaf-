@@ -1,0 +1,57 @@
+@page
+@model AuraCafé.Web.Areas.Admin.Pages.Inventory.IndexModel
+@{ ViewData["Title"] = "Inventory"; }
+<div class="inventory-workspace">
+<header class="inventory-heading"><div><p class="inventory-eyebrow">STOCK &amp; SUPPLIES</p><h1>Inventory Overview</h1><p class="text-muted mb-0">Know what's available. Keep your kitchen ready for the next order.</p></div><a asp-page="./Edit" class="btn btn-primary">+ Add Ingredient</a></header>
+<partial name="_InventoryNav" />
+@if (Model.SuccessMessage is not null) { <div class="alert alert-success" role="status">@Model.SuccessMessage</div> }
+@if (TempData["InventoryError"] is string error) { <div class="alert alert-danger" role="alert">@error</div> }
+@if (Model.ErrorMessage is not null) { <div class="alert alert-danger" role="alert">@Model.ErrorMessage <a asp-page="./Index" class="alert-link">Refresh inventory</a></div> }
+@if (Model.Summary is { } summary)
+{
+    <section class="inventory-metrics" aria-label="Inventory health">
+        <article><span class="inventory-metric-icon" aria-hidden="true">&#9638;</span><p>Ingredients</p><strong>@summary.Ingredients</strong><small>@summary.ActiveIngredients active in your inventory</small></article>
+        <article class="inventory-metric-warning"><span class="inventory-metric-icon" aria-hidden="true">!</span><p>Low stock</p><strong>@summary.LowStock</strong><small>Positive stock at or below minimum</small></article>
+        <article class="inventory-metric-danger"><span class="inventory-metric-icon" aria-hidden="true">&#9711;</span><p>Out of stock</p><strong>@summary.OutOfStock</strong><small>Active ingredients with zero available</small></article>
+        <article><span class="inventory-metric-icon" aria-hidden="true">&#8644;</span><p>Movements</p><strong>@summary.Movements</strong><small>Recorded receipts, usage and corrections</small></article>
+    </section>
+    @if (summary.LowStock + summary.OutOfStock > 0)
+    {
+        <div class="inventory-attention"><div><strong>@(summary.LowStock + summary.OutOfStock) ingredients need attention</strong><p class="small mb-0">Review low and empty stock before receiving your next delivery.</p></div><a asp-page="./Index" asp-route-LowOnly="true" class="btn btn-outline-primary">Review stock</a></div>
+    }
+}
+<div class="inventory-main-layout">
+    <section class="inventory-catalog" aria-labelledby="ingredientsHeading">
+        <div class="inventory-section-heading"><div><h2 id="ingredientsHeading">Ingredients</h2><p class="text-muted small mb-0">Live balances in grams, milliliters or pieces.</p></div><a asp-page="./Movements" class="inventory-text-link">View full ledger &rarr;</a></div>
+        <nav class="inventory-quick-filters" aria-label="Ingredient quick filters">
+            <a asp-page="./Index" class="@(Model.Active is null && !Model.LowOnly ? "is-active" : "")" aria-current="@(Model.Active is null && !Model.LowOnly ? "page" : null)">All ingredients</a>
+            <a asp-page="./Index" asp-route-Active="true" class="@(Model.Active == true && !Model.LowOnly ? "is-active" : "")" aria-current="@(Model.Active == true && !Model.LowOnly ? "page" : null)">Active</a>
+            <a asp-page="./Index" asp-route-LowOnly="true" class="@(Model.LowOnly ? "is-active" : "")" aria-current="@(Model.LowOnly ? "page" : null)">Needs attention</a>
+            <a asp-page="./Index" asp-route-Active="false" class="@(Model.Active == false && !Model.LowOnly ? "is-active" : "")" aria-current="@(Model.Active == false && !Model.LowOnly ? "page" : null)">Inactive</a>
+        </nav>
+        <form method="get" class="inventory-filter-bar"><div class="inventory-search"><label asp-for="Search" class="visually-hidden">Ingredient search</label><input asp-for="Search" class="form-control" type="search" maxlength="150" placeholder="Search ingredients..." /></div><div><label asp-for="Active" class="visually-hidden">Status</label><select asp-for="Active" class="form-select"><option value="">All statuses</option><option value="true">Active</option><option value="false">Inactive</option></select></div><div class="form-check"><input asp-for="LowOnly" class="form-check-input" /><label asp-for="LowOnly" class="form-check-label small">Low / empty only</label></div><button type="submit" class="btn btn-primary">Filter</button><a asp-page="./Index" class="btn btn-outline-secondary">Reset</a></form>
+        @if (Model.PageData is { } data)
+        {
+            <div class="inventory-table-header"><p class="text-muted small mb-0">@data.TotalCount matching ingredients</p><span class="small text-muted">Page @Model.PageNumber of @Model.TotalPages</span></div>
+            <div class="table-responsive" tabindex="0" role="region" aria-label="Ingredients"><table class="table inventory-table align-middle"><thead><tr><th scope="col">Ingredient</th><th scope="col">Available stock</th><th scope="col">Minimum</th><th scope="col">Status</th><th scope="col">Actions</th></tr></thead><tbody>
+                @foreach (var item in data.Items)
+                {
+                    var statusClass = !item.IsActive ? "muted" : item.QuantityOnHand == 0 ? "danger" : item.QuantityOnHand <= item.MinimumQuantity ? "warning" : "success";
+                    <tr><td><div class="inventory-ingredient-name"><span class="inventory-unit-icon" aria-hidden="true">@item.Unit</span><div><strong>@item.Name</strong><small>Ingredient #@item.Id</small></div></div></td><td><strong class="inventory-quantity">@item.QuantityOnHand.ToString("N0")</strong> <span class="text-muted small">@item.Unit</span></td><td class="text-muted">@item.MinimumQuantity.ToString("N0") @item.Unit</td><td><span class="inventory-status is-@statusClass"><span aria-hidden="true"></span>@item.StockStatus</span></td>
+                    <td><div class="inventory-row-actions"><a asp-page="./Movements" asp-route-IngredientId="@item.Id" class="btn btn-sm btn-outline-primary">Stock / History</a><a asp-page="./Edit" asp-route-id="@item.Id" class="inventory-text-link" aria-label="Edit @item.Name">Edit</a>
+                    @if (item.IsActive) { <form method="post" asp-page-handler="Deactivate" asp-route-id="@item.Id" asp-route-Search="@Model.Search" asp-route-Active="@Model.Active" asp-route-LowOnly="@Model.LowOnly" asp-route-PageNumber="@Model.PageNumber" data-inventory-confirm="Deactivate this ingredient? History and recipes are retained; future movements and recipe saves require reactivation."><button type="submit" class="inventory-danger-link" aria-label="Deactivate @item.Name">Deactivate</button></form> }
+                    </div></td></tr>
+                }
+                @if (data.Items.Count == 0) { <tr><td colspan="5"><div class="inventory-empty"><span aria-hidden="true">&#9638;</span><h3>No ingredients found</h3><p class="text-muted">Add your first ingredient or adjust your search and filters.</p><a asp-page="./Edit" class="btn btn-primary">Add Ingredient</a></div></td></tr> }
+            </tbody></table></div>
+            <nav class="inventory-pagination" aria-label="Ingredient pages"><span class="text-muted small">Page @Model.PageNumber of @Model.TotalPages</span><div class="d-flex gap-2">
+                @if (Model.PageNumber > 1) { <a asp-page="./Index" asp-route-PageNumber="@(Model.PageNumber - 1)" asp-route-Search="@Model.Search" asp-route-Active="@Model.Active" asp-route-LowOnly="@Model.LowOnly" class="btn btn-outline-primary">Previous</a> }
+                @if (Model.PageNumber < Model.TotalPages) { <a asp-page="./Index" asp-route-PageNumber="@(Model.PageNumber + 1)" asp-route-Search="@Model.Search" asp-route-Active="@Model.Active" asp-route-LowOnly="@Model.LowOnly" class="btn btn-outline-primary">Next</a> }
+            </div></nav>
+        }
+    </section>
+    <aside class="inventory-side-panel"><span class="inventory-side-icon" aria-hidden="true">&#8644;</span><p class="inventory-eyebrow">KEEP STOCK ACCURATE</p><h2>Record every movement</h2><p class="text-muted small">Choose an ingredient to receive supplies, record usage or correct a count.</p><ol class="inventory-workflow"><li><strong>Receive stock</strong><span>Add deliveries in the ingredient's base unit.</span></li><li><strong>Record usage</strong><span>Track preparation, wastage and other stock-outs.</span></li><li><strong>Review the ledger</strong><span>Every balance change keeps a reason and an actor.</span></li></ol><a asp-page="./Movements" class="btn btn-outline-primary w-100">Open movement ledger</a><div class="inventory-note"><strong>Recipes connect your menu</strong><p class="small">Define what goes into each product. Saving a recipe does not use stock.</p><a asp-page="./Recipes" class="inventory-text-link">Manage recipes &rarr;</a></div><p class="small text-muted mt-3 mb-0">Sales do not automatically deduct inventory. Record stock usage manually.</p></aside>
+</div>
+<p class="small text-muted mt-3">Stock usage is recorded manually. Sales do not automatically deduct inventory.</p>
+</div>
+@section Scripts { <script src="~/js/inventory.js" asp-append-version="true"></script> }

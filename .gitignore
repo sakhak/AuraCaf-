@@ -23,3 +23,6 @@ appsettings.Development.json
 *.db
 *.db-shm
 *.db-wal
+**/App_Data/product-images/
+
+**/App_Data/merchant-qr/

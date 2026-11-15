@@ -1,0 +1,126 @@
+@{
+    var currentPath = Context.Request.Path.Value ?? "";
+
+    string Active(string path) =>
+        currentPath.StartsWith(
+            path, StringComparison.OrdinalIgnoreCase)
+            ? "active" : "";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1" />
+
+    <title>@ViewData["Title"] - Aura Café Admin</title>
+
+    <link rel="stylesheet"
+          href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet"
+          href="~/css/portals.css"
+          asp-append-version="true" />
+</head>
+
+<body class="portal-body admin-theme">
+    <div class="portal-shell">
+
+        <aside class="portal-sidebar">
+            <a class="portal-brand cafe-brand" asp-area="Admin" asp-page="/Dashboard/Index">
+                <span class="cafe-brand-emblem"><partial name="/Pages/Shared/_CafeMark.cshtml" /></span>
+                <span class="cafe-brand-copy"><span class="cafe-brand-name">Aura Caf&#233;<span class="cafe-brand-dot" aria-hidden="true">.</span></span><span class="cafe-brand-caption">CAF&#201; MANAGEMENT</span></span>
+            </a>
+
+            <nav class="nav flex-column">
+                <a class="nav-link @Active("/Admin/Dashboard")"
+                   asp-area="Admin"
+                   asp-page="/Dashboard/Index">
+                    Dashboard
+                </a>
+
+                <a class="nav-link @Active("/Admin/Staff")"
+                   asp-area="Admin"
+                   asp-page="/Staff/Index">
+                    Staff Management
+                </a>
+
+                <a class="nav-link @Active("/Products") @Active("/Admin/Products")"
+                   asp-area=""
+                   asp-page="/Products/Index">
+                    Products
+                </a>
+
+                <a class="nav-link @Active("/Categories") @Active("/Admin/Categories")"
+                   asp-area=""
+                   asp-page="/Categories/Index">
+                    Categories
+                </a>
+
+                <a class="nav-link @Active("/Admin/Inventory")"
+                   asp-area="Admin"
+                   asp-page="/Inventory/Index">
+                    Inventory
+                </a>
+
+                <a class="nav-link @Active("/Admin/Reports")"
+                   asp-area="Admin"
+                   asp-page="/Reports/Index">
+                    Sales Reports
+                </a>
+
+                <a class="nav-link @Active("/Admin/Shifts")"
+                   asp-area="Admin"
+                   asp-page="/Shifts/Index">
+                    Shift Management
+                </a>
+
+                <a class="nav-link @Active("/Admin/Payments")"
+                   asp-area="Admin"
+                   asp-page="/Payments/Index">
+                    Payment Management
+                </a>
+
+                <a class="nav-link @Active("/Admin/Settings/PaymentQr")" asp-area="Admin" asp-page="/Settings/PaymentQr">Merchant QR</a>
+
+
+            </nav>
+        </aside>
+
+        <div class="portal-main">
+
+            <header class="portal-header">
+                <div>
+                    <strong>Admin Portal</strong>
+                    <div class="small text-muted">
+                        Café management
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center gap-3">
+                    <span>@User.Identity?.Name</span>
+
+                    <form asp-area=""
+                          asp-page="/Account/Logout"
+                          method="post">
+                        <button type="submit"
+                                class="btn btn-outline-danger btn-sm">
+                            Logout
+                        </button>
+                    </form>
+                </div>
+            </header>
+
+            <main class="portal-content">
+                @RenderBody()
+            </main>
+
+        </div>
+    </div>
+
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js">
+    </script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

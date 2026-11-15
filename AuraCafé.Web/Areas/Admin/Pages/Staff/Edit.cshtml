@@ -1,0 +1,16 @@
+@page "{id:int}"
+@model AuraCafé.Web.Areas.Admin.Pages.Staff.EditModel
+@{ ViewData["Title"] = "Edit Employee"; }
+<link rel="stylesheet" href="~/css/staff.css" asp-append-version="true" />
+<div class="staff-workspace"><header class="staff-heading"><div><p class="staff-eyebrow">EMPLOYEE PROFILE</p><h1>Edit Employee</h1><p class="text-muted mb-0">Update contact details while preserving account and sales history.</p></div><a asp-page="./Index" class="btn btn-outline-primary">Back to staff</a></header>
+@if (Model.ErrorMessage is not null) { <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div> }
+<div class="staff-form-layout"><form method="post" class="staff-form" data-staff-save>
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-3" role="alert"></div><h2>Profile details</h2>
+    <div class="mb-3"><label for="staffCode" class="form-label">Employee code</label><input id="staffCode" value="@Model.StaffCode" class="form-control" readonly /></div>
+    <div class="mb-3"><label asp-for="Staff.FullName" class="form-label">Full name</label><input asp-for="Staff.FullName" class="form-control" autocomplete="name" maxlength="150" required /><span asp-validation-for="Staff.FullName" class="text-danger"></span></div>
+    <div class="mb-3"><label asp-for="Staff.PhoneNumber" class="form-label">Phone number <span class="text-muted small">(optional)</span></label><input asp-for="Staff.PhoneNumber" class="form-control" type="tel" autocomplete="tel" maxlength="30" /><span asp-validation-for="Staff.PhoneNumber" class="text-danger"></span></div>
+    <div class="staff-form-divider"></div><h2>Employment</h2>
+    <div class="staff-field-grid"><div class="mb-3"><label asp-for="Staff.Position" class="form-label">Position</label><input asp-for="Staff.Position" class="form-control" readonly aria-describedby="staffPositionHelp" /><p id="staffPositionHelp" class="form-text">Position changes affecting cashier access require separate account management.</p></div><div class="mb-3"><label asp-for="Staff.HireDate" class="form-label">Hire date</label><input asp-for="Staff.HireDate" type="date" class="form-control" required /><span asp-validation-for="Staff.HireDate" class="text-danger"></span></div></div>
+    <div class="staff-form-actions"><button type="submit" class="btn btn-primary">Save Changes</button><a asp-page="./Index" class="btn btn-outline-secondary">Cancel</a></div>
+</form><aside class="staff-side-panel"><span class="staff-side-icon" aria-hidden="true">&#10003;</span><p class="staff-eyebrow">PROTECT THE HISTORY</p><h2>Details can change. Records stay.</h2><p class="text-muted">Editing a profile keeps its employee ID, shifts, orders and payment references.</p><div class="staff-note"><strong>Need to pause access?</strong><p class="small mb-0">Use Deactivate in Staff Management. It preserves records and disables the linked login through the existing account service.</p></div></aside></div></div>
+@section Scripts { <script src="~/js/staff.js" asp-append-version="true"></script> }

@@ -1,0 +1,215 @@
+@page
+@model AuraCafé.Web.Areas.Cashier.Pages.POS.IndexModel
+@using System.Text.Json
+
+@{
+    ViewData["Title"] = "Point of Sale";
+
+    var productsJson = JsonSerializer.Serialize(
+        Model.Products.Select(p => new
+        {
+            id = p.Id,
+            name = p.Name,
+            priceCents = p.PriceCents,
+            categoryId = p.CategoryId
+        }));
+}
+
+<link rel="stylesheet"
+      href="~/css/pos.css"
+      asp-append-version="true" />
+
+<div class="pos-heading">
+    <div>
+        <h2 class="fw-bold mb-1">Point of Sale</h2>
+        <p class="text-muted">
+            Select products and create customer orders.
+        </p>
+    </div>
+
+    <a asp-area="Cashier"
+       asp-page="/Orders/Index"
+       class="btn btn-outline-success">
+        My Orders
+    </a>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Model.SuccessMessage))
+{
+    <div class="alert alert-success">
+        @Model.SuccessMessage
+    </div>
+}
+
+@if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+{
+    <div class="alert alert-danger">
+        @Model.ErrorMessage
+    </div>
+}
+
+<div asp-validation-summary="ModelOnly"
+     class="text-danger mb-3"></div>
+
+@if (!Model.HasActiveShift)
+{
+    <div class="alert alert-warning">
+        You must clock in before creating an order.
+
+        <a asp-area="Cashier"
+           asp-page="/MyShift/Index"
+           class="alert-link">
+            Open My Shift
+        </a>
+    </div>
+}
+
+<div class="pos-layout">
+
+    <aside class="pos-categories" aria-labelledby="categoriesHeading">
+        <h3 id="categoriesHeading" class="h5 mb-3">Categories</h3>
+        <label for="categoryFilter" class="visually-hidden">Filter products by category</label>
+        <select id="categoryFilter"
+                class="form-select pos-category-list"
+                size="@Math.Clamp(Model.Categories.Count + 1, 4, 12)">
+            <option value="all" selected>All Categories</option>
+            @foreach (var category in Model.Categories)
+            {
+                <option value="@category.Id">@category.Name</option>
+            }
+        </select>
+    </aside>
+
+    <section class="pos-products" aria-label="Product catalog" tabindex="0">
+
+        <div class="pos-toolbar">
+            <label for="productSearch" class="visually-hidden">Search products</label>
+            <input id="productSearch"
+                   type="search"
+                   class="form-control"
+                   placeholder="Search products..." />
+
+        </div>
+
+        <div class="pos-product-grid" id="productGrid">
+
+            @foreach (var product in Model.Products)
+            {
+                <article class="pos-product-card"
+                         data-product-id="@product.Id"
+                         data-category-id="@product.CategoryId"
+                         data-name="@product.Name.ToLowerInvariant()">
+
+                    <div class="pos-product-icon">
+                        @if (!string.IsNullOrEmpty(product.ImageUrl))
+                        {
+                            <img src="@product.ImageUrl" class="pos-product-image" alt="" loading="lazy" referrerpolicy="no-referrer" data-pos-image />
+                        }
+                        <span class="pos-image-fallback" hidden="@(!string.IsNullOrEmpty(product.ImageUrl))" aria-hidden="true"><partial name="/Pages/Shared/_CafeMark.cshtml" /></span>
+                    </div>
+
+                    <div class="pos-product-info">
+                        <h5>@product.Name</h5>
+
+                        <p class="text-muted small">
+                            @product.Description
+                        </p>
+
+                        <div class="pos-product-bottom">
+                            <strong>
+                                $@((product.PriceCents / 100m).ToString("0.00"))
+                            </strong>
+
+                            <button type="button"
+                                    class="btn btn-success btn-sm add-product"
+                                    data-product-id="@product.Id"
+                                    disabled="@(!Model.HasActiveShift)">
+                                + Add
+                            </button>
+                        </div>
+                    </div>
+
+                </article>
+            }
+
+        </div>
+
+        @if (Model.Products.Count == 0)
+        {
+            <div class="alert alert-info">
+                No available products found.
+            </div>
+        }
+
+    </section>
+
+    <aside class="pos-cart" aria-labelledby="currentOrderHeading">
+
+        <div class="d-flex justify-content-between align-items-center">
+            <h4 id="currentOrderHeading" class="mb-0">Current Order</h4>
+            <button id="clearCart"
+                    type="button"
+                    class="btn btn-sm btn-outline-secondary">
+                Clear
+            </button>
+        </div>
+
+        <p class="text-muted small mt-2">
+            Review products before checkout.
+        </p>
+
+        <div id="cartItems" class="pos-cart-items" role="region" aria-label="Current order items" tabindex="0">
+            <p class="text-muted text-center">
+                Your cart is empty.
+            </p>
+        </div>
+
+        <div class="pos-cart-footer">
+            <div class="d-flex justify-content-between mb-3">
+                <strong>Total</strong>
+                <strong id="cartTotal">$0.00</strong>
+            </div>
+
+            <form method="post"
+                  asp-page-handler="Checkout"
+                  id="checkoutForm">
+
+                <input asp-for="CartJson"
+                       type="hidden"
+                       id="cartJson" />
+
+                <input type="hidden" name="ProceedToPayment" value="true" />
+                <fieldset class="mb-3">
+                    <legend class="h6">Payment method</legend>
+                    <label class="d-block mb-2"><input type="radio" name="paymentChoice" value="cash" checked /> Cash (USD)</label>
+                    <label class="d-block text-muted"><input type="radio" name="paymentChoice" value="qr" aria-describedby="qrNotice" /> Bakong QR scan</label>
+                    <small id="qrNotice" class="text-muted">Display your merchant QR at checkout. Payment stays pending until verified.</small>
+                </fieldset>
+                <button type="submit"
+                        id="checkoutButton"
+                        class="btn btn-success w-100"
+                        disabled>
+                    Create Order &amp; Checkout
+                </button>
+            </form>
+
+            <p class="text-muted small mt-2 mb-0">
+                The API calculates the final price.
+                Enter cash received on the next screen. Print a receipt after payment if the customer wants one.
+            </p>
+        </div>
+
+    </aside>
+</div>
+
+@section Scripts {
+    <script>
+        window.auraPos = {
+            products: @Html.Raw(productsJson),
+            hasActiveShift: @Json.Serialize(Model.HasActiveShift)
+        };
+    </script>
+
+    <script src="~/js/pos.js"
+            asp-append-version="true"></script>
+}

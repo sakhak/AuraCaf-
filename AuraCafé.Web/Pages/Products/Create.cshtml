@@ -6,6 +6,8 @@
     ViewData["Title"] = "Add Product";
 }
 
+<link rel="stylesheet" href="~/css/products.css" asp-append-version="true" />
+
 <div class="container py-4" style="max-width: 800px;">
     <a asp-page="./Index" class="text-decoration-none">
         ← Back to Products
@@ -22,7 +24,7 @@
                 </div>
             }
 
-            <form method="post">
+            <form method="post" enctype="multipart/form-data">
                 <div asp-validation-summary="ModelOnly"
                      class="text-danger mb-3"></div>
 
@@ -75,11 +77,26 @@
                                 </option>
                             }
                         </select>
+                        <div class="form-text"><a asp-page="/Categories/Index">Manage categories</a></div>
                         <span asp-validation-for="Product.CategoryId"
                               class="text-danger"></span>
                     </div>
                 </div>
 
+                <div class="mb-3">
+                    <label asp-for="ImageUpload" class="form-label">Product image from your computer</label>
+                    <input asp-for="ImageUpload" type="file" class="form-control" accept="image/jpeg,image/png,image/webp" data-image-upload aria-describedby="imageHelp" />
+                    <span asp-validation-for="ImageUpload" class="text-danger"></span>
+                    <p id="imageHelp" class="form-text">Choose JPG, PNG or WebP, up to 5 MB. Leave empty to keep the current image when editing.</p>
+                    <img id="productImagePreview" class="product-preview" alt="Product image preview" data-current-image="@Model.Product.ImageUrl" hidden referrerpolicy="no-referrer" />
+                    <p id="imagePreviewStatus" class="form-text" role="status"></p>
+                </div>
+                <div class="form-check mb-3">
+                    <input asp-for="Product.IsActive" class="form-check-input" />
+                    <label asp-for="Product.IsActive" class="form-check-label">Active product</label>
+                    <div class="form-text">Inactive products cannot be ordered. Existing order history is retained.</div>
+                </div>
+                <div class="form-check mb-3"><input asp-for="Product.IsAvailable" class="form-check-input" /><label asp-for="Product.IsAvailable" class="form-check-label">Available for sale</label></div>
                 <div class="d-flex gap-2 mt-3">
                     <button type="submit"
                             class="btn btn-primary"
@@ -98,4 +115,5 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/products.js" asp-append-version="true"></script>
 }

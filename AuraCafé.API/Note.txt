@@ -3,3 +3,44 @@ dotnet build
 
 dotnet run --project AuraCafé.API --urls http://localhost:5100
 dotnet run --project AuraCafé.Web --urls http://localhost:5200
+
+=============== Run these commands to store development secrets ===============
+
+dotnet user-secrets init --project AuraCafé.API
+
+dotnet user-secrets set "Jwt:Key" "REPLACE_WITH_A_RANDOM_64_CHARACTER_SECRET" --project AuraCafé.API
+
+dotnet user-secrets set "SeedAdmin:Email" "admin@auracafe.local" --project AuraCafé.API
+
+dotnet user-secrets set "SeedAdmin:Password" "Admin@!123" --project AuraCafé.API
+
+admin pw:
+dotnet user-secrets set "SeedAdmin:Password" "Admin@!1234567890" --project .
+
+=============== Generate a random JWT key using PowerShell ===============
+$bytes = [byte[]]::new(48)
+[System.Security.Cryptography.RandomNumberGenerator]::Fill($bytes)
+$key = [Convert]::ToBase64String($bytes)
+
+dotnet user-secrets set "Jwt:Key" $key --project AuraCafé.API
+
+
+Create a test Cashier account:
+dotnet user-secrets set "SeedCashier:Email" "cashier@auracafe.local" --project AuraCafé.API
+
+dotnet user-secrets set "SeedCashier:Password" "Cashier@!1234567890" --project AuraCafé.API
+
+
+
+dotnet ef migrations add AddStaffManagement --project AuraCafé.API --startup-project AuraCafé.API
+dotnet ef database update --project AuraCafé.API --startup-project AuraCafé.API
+
+
+dotnet build AuraCafé.API
+dotnet build AuraCafé.Web
+
+
+New-Item -ItemType Directory -Force -Path ".\Backups"
+
+dotnet ef migrations add AddOrderManagement --project AuraCafé.API --startup-project AuraCafé.API
+dotnet ef database update --project AuraCafé.API --startup-project AuraCafé.API

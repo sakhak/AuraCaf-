@@ -1,4 +1,3 @@
-
 using AuraCafé.Web.Models;
 using AuraCafé.Web.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -6,62 +5,58 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace AuraCafé.Web.Pages.Products;
 
-public class IndexModel : PageModel
+public class IndexModel(ProductApiService api, ILogger<IndexModel> logger) : PageModel
 {
-    private readonly ProductApiService _productApi;
-    private readonly ILogger<IndexModel> _logger;
-
-    public IndexModel(
-        ProductApiService productApi,
-        ILogger<IndexModel> logger)
-    {
-        _productApi = productApi;
-        _logger = logger;
-    }
-
-    public List<ProductDto> Products { get; set; } = new();
-
-    public string? ErrorMessage { get; set; }
-
-    [TempData]
-    public string? SuccessMessage { get; set; }
+    public List<ProductDto> Products { get; private set; } = [];
+    public List<CategoryDto> Categories { get; private set; } = [];
+    [BindProperty(SupportsGet = true)] public string? Search { get; set; }
+    [BindProperty(SupportsGet = true)] public int? CategoryId { get; set; }
+    [BindProperty(SupportsGet = true)] public bool? Available { get; set; }
+    [BindProperty(SupportsGet = true)] public bool? Active { get; set; }
+    [BindProperty(SupportsGet = true)] public int PageNumber { get; set; } = 1;
+    public int TotalCount { get; private set; }
+    public int TotalPages => Math.Max(1, (int)Math.Ceiling(TotalCount / 12d));
+    public string? ErrorMessage { get; private set; }
+    [TempData] public string? SuccessMessage { get; set; }
 
     public async Task OnGetAsync()
     {
+        if (!ModelState.IsValid || PageNumber < 1 || PageNumber > 1000000 || CategoryId <= 0)
+        {
+            ErrorMessage = "Invalid filters or page number.";
+            return;
+        }
         try
         {
-            Products = await _productApi.GetAllAsync();
+            Categories = await api.GetCategoriesAsync();
+            var result = await api.SearchAsync(Search, CategoryId, Available, Active, PageNumber);
+            TotalCount = result.TotalCount;
+            if (PageNumber > TotalPages)
+            {
+                PageNumber = TotalPages;
+                result = await api.SearchAsync(Search, CategoryId, Available, Active, PageNumber);
+            }
+            Products = result.Items;
         }
-        catch (HttpRequestException ex)
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
         {
-            _logger.LogError(ex, "Failed to load products");
-            ErrorMessage = "Unable to load products. Check that the API is running.";
-        }
-        catch (TaskCanceledException ex)
-        {
-            _logger.LogError(ex, "Product request timed out");
-            ErrorMessage = "The API request timed out.";
+            logger.LogError(ex, "Failed to load product management");
+            ErrorMessage = "Unable to load products. Check the API connection and try again.";
         }
     }
 
-    public async Task<IActionResult> OnPostDeleteAsync(int id)
+    public async Task<IActionResult> OnPostDeactivateAsync(int id)
     {
         try
         {
-            await _productApi.DeleteAsync(id);
-            SuccessMessage = "Product deleted successfully.";
+            await api.DeleteAsync(id);
+            SuccessMessage = "Product deactivated. Historical orders are preserved.";
         }
-        catch (HttpRequestException ex)
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
         {
-            _logger.LogError(ex, "Failed to delete product {Id}", id);
-            TempData["ErrorMessage"] = "Unable to delete product.";
+            logger.LogError(ex, "Failed to deactivate product {Id}", id);
+            TempData["ErrorMessage"] = "Could not confirm deactivation. Check the product before retrying.";
         }
-        catch (TaskCanceledException ex)
-        {
-            _logger.LogError(ex, "Delete request timed out for {Id}", id);
-            TempData["ErrorMessage"] = "Delete request timed out.";
-        }
-
-        return RedirectToPage();
+        return RedirectToPage("./Index", new { Search, CategoryId, Available, Active, PageNumber });
     }
 }

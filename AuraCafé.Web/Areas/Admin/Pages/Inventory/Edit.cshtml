@@ -1,0 +1,21 @@
+@page "{id:int?}"
+@model AuraCafé.Web.Areas.Admin.Pages.Inventory.EditModel
+@{ ViewData["Title"] = Model.IngredientId.HasValue ? "Edit Ingredient" : "Add Ingredient"; }
+<div class="inventory-workspace">
+<header class="inventory-heading"><div><p class="inventory-eyebrow">INGREDIENT DETAILS</p><h1>@ViewData["Title"]</h1><p class="text-muted mb-0">Set a clear name, base unit and reorder threshold.</p></div><a asp-page="./Index" class="btn btn-outline-primary">Back to ingredients</a></header>
+<partial name="_InventoryNav" />
+@if (Model.ErrorMessage is not null) { <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div> }
+<div class="inventory-edit-layout"><form method="post" class="portal-card" data-inventory-submit>
+    <div asp-validation-summary="All" class="text-danger" role="alert"></div>
+    <div class="mb-3"><label asp-for="Input.Name" class="form-label">Ingredient name</label><input asp-for="Input.Name" class="form-control" maxlength="150" required /><span asp-validation-for="Input.Name" class="text-danger"></span></div>
+    <div class="mb-3"><label asp-for="Input.Unit" class="form-label">Base unit</label>
+        @if (Model.IngredientId.HasValue) { <input asp-for="Input.Unit" class="form-control" readonly /> }
+        else { <select asp-for="Input.Unit" class="form-select"><option value="g">Grams (g)</option><option value="ml">Milliliters (ml)</option><option value="pcs">Pieces (pcs)</option></select> }
+        <p class="form-text">Units cannot change after creation. For example, enter 1500 g rather than 1.5 kg. Start at zero and receive supplies through the ledger.</p>
+    </div>
+    <div class="mb-3"><label asp-for="Input.MinimumQuantity" class="form-label">Minimum stock (whole base units)</label><input asp-for="Input.MinimumQuantity" class="form-control" type="number" min="0" step="1" required /><span asp-validation-for="Input.MinimumQuantity" class="text-danger"></span></div>
+    <div class="form-check mb-3"><input asp-for="Input.IsActive" class="form-check-input" /><label asp-for="Input.IsActive" class="form-check-label">Active ingredient</label></div>
+    <button type="submit" class="btn btn-primary">Save Ingredient</button> <a asp-page="./Index" class="btn btn-outline-secondary">Cancel</a>
+</form><aside class="inventory-side-panel"><p class="inventory-eyebrow">START WITH THE BASICS</p><h2>One ingredient, one unit</h2><p class="text-muted">Grams for dry goods, milliliters for liquids and pieces for individual supplies.</p><div class="inventory-note"><strong>Balances stay in the ledger</strong><p class="small mb-0">New ingredients start at zero. Receive stock after saving. Editing these details never overwrites the available quantity.</p></div></aside></div>
+</div>
+@section Scripts { <script src="~/js/inventory.js" asp-append-version="true"></script> }

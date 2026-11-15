@@ -1,4 +1,4 @@
-﻿namespace AuraCafé.API.DTOs.Products;
+namespace AuraCafé.API.DTOs.Products;
 
 public class ProductResponseDto
 {
@@ -7,6 +7,9 @@ public class ProductResponseDto
     public string Name { get; set; } = "";
 
     public string Description { get; set; } = "";
+
+    public string ImageUrl { get; set; } = "";
+    public bool IsActive { get; set; } = true;
 
     public int PriceCents { get; set; }
 

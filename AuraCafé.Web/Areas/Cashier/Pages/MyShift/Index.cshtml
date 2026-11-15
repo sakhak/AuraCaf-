@@ -1,0 +1,86 @@
+@page
+@model AuraCafé.Web.Areas.Cashier.Pages.MyShift.IndexModel
+@using AuraCafé.Web.Models
+@{ ViewData["Title"] = "My Shift"; }
+<h1>My Shift</h1>
+<p class="text-muted">Working hours and drawer counts. USD and Khmer riel (KHR) are recorded separately. Asia/Bangkok (UTC+07:00).</p>
+@if (Model.SuccessMessage is not null) { <div class="alert alert-success" role="status">@Model.SuccessMessage</div> }
+@if (TempData["ShiftError"] is string error) { <div class="alert alert-danger" role="alert">@error</div> }
+@if (Model.ErrorMessage is not null) { <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div> }
+<div asp-validation-summary="All" class="text-danger" role="alert"></div>
+<section class="portal-card mb-4">
+    <h2 class="h4">Current shift</h2>
+    @if (Model.CurrentShift is null && Model.ErrorMessage is null)
+    {
+        <p>No open shift. Count the opening drawer float before clocking in.</p>
+        <form method="post" asp-page-handler="ClockIn" data-shift-action>
+            <div class="mb-3">
+                <label asp-for="OpeningCash" class="form-label">Opening drawer float (USD)</label>
+                <input asp-for="OpeningCash" class="form-control" type="number" inputmode="decimal" step="0.01" min="0" max="21474836.47" aria-describedby="openingCashHelp" required />
+                <p id="openingCashHelp" class="form-text">Count the USD cash already in the drawer. Enter zero if empty; use numbers only.</p>
+                <span asp-validation-for="OpeningCash" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="OpeningRiel" class="form-label">Opening drawer float — Khmer riel (KHR)</label>
+                <input asp-for="OpeningRiel" class="form-control" type="number" inputmode="numeric" step="1" min="0" aria-describedby="openingRielHelp" required />
+                <p id="openingRielHelp" class="form-text">Count the riel already in the drawer, in whole riel. Enter zero if empty. This amount is not converted to USD.</p>
+                <span asp-validation-for="OpeningRiel" class="text-danger"></span>
+            </div>
+            <button type="submit" class="btn btn-success">Clock In</button>
+        </form>
+    }
+    else if (Model.CurrentShift is { } current)
+    {
+        <p><span class="badge bg-success">Working</span> Shift #@current.Id since @ReportDisplay.Local(current.ClockInUtc)</p>
+        <p>Opening float: <strong>@(current.OpeningCashCents.HasValue ? ReportDisplay.Money(current.OpeningCashCents.Value) : "Not recorded (legacy shift)")</strong></p>
+        <p>KHR opening float: <strong>@(current.OpeningCashRiel.HasValue ? ReportDisplay.Riel(current.OpeningCashRiel.Value) : "Not recorded for this existing shift")</strong></p>
+        @if (!current.OpeningCashCents.HasValue)
+        {
+            <div class="alert alert-warning">This existing shift has no opening float. Close attendance without a cash difference; no opening amount will be invented.</div>
+            <form method="post" asp-page-handler="ClockOut" data-shift-action data-confirm="Close this legacy shift without drawer reconciliation?"><button type="submit" class="btn btn-outline-danger">Close Legacy Shift</button></form>
+        }
+        else
+        {
+            <form method="post" asp-page-handler="CloseAndReconcile" data-shift-action data-confirm="Have you counted the entire drawer, including the opening float? This closes your shift and saves an immutable count.">
+                <input type="hidden" name="ClosingShiftId" value="@current.Id" />
+                <div class="mb-3"><label asp-for="CountedCash" class="form-label">Actual full drawer count (USD, including opening float)</label><input asp-for="CountedCash" class="form-control" type="number" step="0.01" min="0" required /><span asp-validation-for="CountedCash" class="text-danger"></span></div>
+                @if (current.OpeningCashRiel.HasValue)
+                {
+                    <div class="mb-3"><label asp-for="CountedRiel" class="form-label">Actual full drawer count — Khmer riel (KHR)</label><input asp-for="CountedRiel" class="form-control" type="number" inputmode="numeric" step="1" min="0" required /><span asp-validation-for="CountedRiel" class="text-danger"></span></div>
+                }
+                <div class="mb-3"><label asp-for="Note" class="form-label">Count note (optional)</label><textarea asp-for="Note" class="form-control" maxlength="500"></textarea></div>
+                <button type="submit" class="btn btn-primary" disabled="@Model.ClosureUnconfirmed">Close Shift and Submit Count</button>
+            </form>
+        }
+    }
+    <a asp-page="./Index" asp-route-ShiftId="@(Model.Cash?.WorkShiftId ?? Model.CurrentShift?.Id)" class="btn btn-outline-secondary mt-3">Refresh / Check Status</a>
+</section>
+@if (Model.Cash is { } cash)
+{
+    <section class="portal-card mb-4">
+        <h2 class="h4">Drawer overview - shift #@cash.WorkShiftId</h2>
+        <p>@cash.CashierName / @cash.ShiftStatus</p>
+        <dl class="row">
+            <dt class="col-sm-6">Opening float</dt><dd class="col-sm-6">@(cash.OpeningCashCents.HasValue ? ReportDisplay.Money(cash.OpeningCashCents.Value) : "Not recorded")</dd>
+            <dt class="col-sm-6">Completed cash sales (@cash.PaidOrders paid orders)</dt><dd class="col-sm-6">@ReportDisplay.Money(cash.RevenueCents)</dd>
+            <dt class="col-sm-6">Cash received</dt><dd class="col-sm-6">@ReportDisplay.Money(cash.CashReceivedCents)</dd>
+            <dt class="col-sm-6">Change given</dt><dd class="col-sm-6">@ReportDisplay.Money(cash.ChangeCents)</dd>
+            <dt class="col-sm-6">Expected full drawer</dt><dd class="col-sm-6">@(cash.ExpectedCashCents.HasValue ? ReportDisplay.Money(cash.ExpectedCashCents.Value) : "Unavailable without opening float")</dd>
+            <dt class="col-sm-6">Actual counted drawer</dt><dd class="col-sm-6">@(cash.CountedCashCents.HasValue ? ReportDisplay.Money(cash.CountedCashCents.Value) : "Not submitted")</dd>
+            <dt class="col-sm-6">Difference (positive = overage; negative = shortage)</dt><dd class="col-sm-6">@(cash.DifferenceCents.HasValue ? ReportDisplay.Money(cash.DifferenceCents.Value) : "Not submitted")</dd>
+            <dt class="col-sm-6">Opening Khmer riel</dt><dd class="col-sm-6">@(cash.OpeningCashRiel.HasValue ? ReportDisplay.Riel(cash.OpeningCashRiel.Value) : "Not recorded")</dd>
+            <dt class="col-sm-6">Expected Khmer riel</dt><dd class="col-sm-6">@(cash.ExpectedCashRiel.HasValue ? ReportDisplay.Riel(cash.ExpectedCashRiel.Value) : "Not recorded")</dd>
+            <dt class="col-sm-6">Counted Khmer riel</dt><dd class="col-sm-6">@(cash.CountedCashRiel.HasValue ? ReportDisplay.Riel(cash.CountedCashRiel.Value) : "Not submitted")</dd>
+            <dt class="col-sm-6">KHR difference</dt><dd class="col-sm-6">@(cash.DifferenceCashRiel.HasValue ? ReportDisplay.Riel(cash.DifferenceCashRiel.Value) : "Not submitted")</dd>
+        </dl>
+        @if (cash.SubmittedAtUtc.HasValue) { <p>Recorded @ReportDisplay.Local(cash.SubmittedAtUtc.Value). @cash.Note</p> }
+        <p class="text-muted small mb-0">USD expected = USD opening + completed USD cash sales. KHR expected = KHR opening; KHR sales, change and currency exchange are not implemented. Counts and differences stay separate; no currency conversion is performed.</p>
+    </section>
+}
+<section class="portal-card"><h2 class="h4">Shift history</h2>
+    <div class="table-responsive"><table class="table"><thead><tr><th scope="col">Shift</th><th scope="col">Clock in</th><th scope="col">Clock out</th><th scope="col">Status</th><th scope="col">Drawer</th></tr></thead><tbody>
+    @foreach (var shift in Model.History) { <tr><td>#@shift.Id</td><td>@ReportDisplay.Local(shift.ClockInUtc)</td><td>@(shift.ClockOutUtc.HasValue ? ReportDisplay.Local(shift.ClockOutUtc.Value) : "Open")</td><td>@shift.Status</td><td><a asp-page="./Index" asp-route-ShiftId="@shift.Id">View cash summary</a></td></tr> }
+    </tbody></table></div>
+    @if (Model.History.Count == 0 && Model.ErrorMessage is null) { <p class="text-muted">No shift history.</p> }
+</section>
+@section Scripts { <script src="~/js/shifts.js" asp-append-version="true"></script> }

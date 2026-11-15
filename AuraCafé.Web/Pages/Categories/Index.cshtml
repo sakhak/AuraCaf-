@@ -1,0 +1,84 @@
+@page
+@model AuraCafé.Web.Pages.Categories.IndexModel
+@{ ViewData["Title"] = "Categories"; }
+<link rel="stylesheet" href="~/css/categories.css" asp-append-version="true" />
+<div class="category-workspace">
+    <header class="category-heading">
+        <div><p class="category-eyebrow">MENU ORGANIZATION</p><h1>Categories</h1><p class="text-muted mb-0">A well-organized menu starts here. Group your products so they are easy to find.</p></div>
+        <a asp-page="/Products/Index" class="btn btn-outline-primary">View products <span aria-hidden="true">&rarr;</span></a>
+    </header>
+    @if (Model.SuccessMessage is not null) { <div class="alert alert-success" role="status">@Model.SuccessMessage</div> }
+    @if (TempData["CategoryError"] is string error) { <div class="alert alert-danger" role="alert">@error</div> }
+    @if (Model.ErrorMessage is not null) { <div class="alert alert-danger" role="alert">@Model.ErrorMessage <a asp-page="./Index" class="alert-link">Refresh</a></div> }
+    @if (Model.Data is { } totals)
+    {
+        <section class="category-metrics" aria-label="Category overview">
+            <article><span class="category-metric-icon" aria-hidden="true">&#9638;</span><div><p>Categories</p><strong>@totals.CategoryCount</strong></div></article>
+            <article><span class="category-metric-icon" aria-hidden="true">&#9671;</span><div><p>Products organized</p><strong>@totals.AssignedProducts</strong></div></article>
+            <article><span class="category-metric-icon" aria-hidden="true">&#9711;</span><div><p>Ready for products</p><strong>@totals.EmptyCategories</strong></div></article>
+        </section>
+    }
+    <div class="category-layout">
+        <section class="category-catalog" aria-labelledby="allCategoriesHeading">
+            <div class="category-list-heading"><div><h2 id="allCategoriesHeading">Your categories</h2><p class="text-muted small mb-0">Product counts include active and inactive catalog items.</p></div></div>
+            <form method="get" class="category-search" role="search">
+                <label for="categorySearch" class="visually-hidden">Search categories by name</label>
+                <input id="categorySearch" asp-for="Search" type="search" maxlength="100" class="form-control" placeholder="Search categories..." />
+                <button type="submit" class="btn btn-primary">Search</button>
+                @if (!string.IsNullOrWhiteSpace(Model.Search)) { <a asp-page="./Index" class="btn btn-outline-secondary">Clear</a> }
+            </form>
+            @if (Model.Data is { } data)
+            {
+                <p class="category-result-count text-muted small">@data.TotalCount @(data.TotalCount == 1 ? "category" : "categories")@(!string.IsNullOrWhiteSpace(Model.Search) ? " matching your search" : " in your menu")</p>
+                @if (data.Items.Count == 0)
+                {
+                    <div class="category-empty"><span aria-hidden="true">&#9638;</span><h3>@(string.IsNullOrWhiteSpace(Model.Search) ? "Build your menu structure" : "No categories found")</h3><p class="text-muted">@(string.IsNullOrWhiteSpace(Model.Search) ? "Add your first category using the form. It will be available when creating products." : "Try a different name or clear your search.")</p></div>
+                }
+                else
+                {
+                    <div class="category-grid">
+                        @foreach (var category in data.Items)
+                        {
+                            <article class="category-card @(Model.EditId == category.Id ? "is-editing" : "")">
+                                <div class="category-card-top"><span class="category-avatar" aria-hidden="true">@System.Globalization.StringInfo.GetNextTextElement(category.Name)</span><span class="category-tag">@(category.ProductCount > 0 ? "In use" : "Empty")</span></div>
+                                <h3>@category.Name</h3><p class="category-product-count"><strong>@category.ProductCount</strong> @(category.ProductCount == 1 ? "product" : "products")</p>
+                                <div class="category-card-actions">
+                                    <a asp-page="./Index" asp-route-EditId="@category.Id" asp-route-Search="@Model.Search" asp-route-PageNumber="@Model.PageNumber" asp-fragment="categoryForm" class="btn btn-outline-primary btn-sm" aria-label="Edit @category.Name">Edit</a>
+                                    @if (category.ProductCount > 0)
+                                    { <a asp-page="/Products/Index" asp-route-CategoryId="@category.Id" class="btn btn-outline-secondary btn-sm" aria-label="View products in @category.Name">View products</a> }
+                                    else
+                                    {
+                                        <form method="post" asp-page-handler="Delete" asp-route-id="@category.Id" asp-route-Search="@Model.Search" asp-route-PageNumber="@Model.PageNumber" data-category-delete>
+                                            <button type="submit" class="btn btn-outline-danger btn-sm" aria-label="Delete unused category @category.Name">Delete</button>
+                                        </form>
+                                    }
+                                </div>
+                            </article>
+                        }
+                    </div>
+                }
+                <nav class="category-pagination" aria-label="Category pages">
+                    <span class="text-muted small">Page @Model.PageNumber of @Model.TotalPages</span><div class="d-flex gap-2">
+                    @if (Model.PageNumber > 1) { <a asp-page="./Index" asp-route-PageNumber="@(Model.PageNumber - 1)" asp-route-Search="@Model.Search" class="btn btn-outline-primary">Previous</a> }
+                    @if (Model.PageNumber < Model.TotalPages) { <a asp-page="./Index" asp-route-PageNumber="@(Model.PageNumber + 1)" asp-route-Search="@Model.Search" class="btn btn-outline-primary">Next</a> }
+                    </div>
+                </nav>
+            }
+        </section>
+        <aside class="category-editor" id="categoryForm" aria-labelledby="categoryFormHeading">
+            <div class="category-editor-intro"><span class="category-editor-icon" aria-hidden="true">@(Model.EditId.HasValue ? "✎" : "+")</span><p class="category-eyebrow">@(Model.EditId.HasValue ? "REFINE YOUR MENU" : "GROW YOUR MENU")</p><h2 id="categoryFormHeading">@(Model.EditId.HasValue ? "Edit category" : "New category")</h2><p class="text-muted small">@(Model.EditId.HasValue ? "Renaming keeps every product linked to this category." : "Choose a short, clear name that helps cashiers navigate your menu.")</p></div>
+            <form method="post" data-category-save>
+                <input asp-for="EditId" type="hidden" />
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3" role="alert"></div>
+                <label asp-for="Name" class="form-label"></label>
+                <input asp-for="Name" class="form-control" maxlength="100" placeholder="e.g. Coffee or Pastries" aria-describedby="categoryNameHelp" required />
+                <span asp-validation-for="Name" class="text-danger"></span>
+                <p id="categoryNameHelp" class="form-text">Up to 100 characters. Each category needs a unique name.</p>
+                <button type="submit" class="btn btn-primary w-100 mt-2">@(Model.EditId.HasValue ? "Save changes" : "+ Create category")</button>
+                @if (Model.EditId.HasValue) { <a asp-page="./Index" class="btn btn-outline-secondary w-100 mt-2">Cancel edit</a> }
+            </form>
+            <div class="category-note"><strong>Keep your catalog connected</strong><p class="small mb-0">Categories containing products are protected from deletion. Move their products to another category first.</p></div>
+        </aside>
+    </div>
+</div>
+@section Scripts { <script src="~/js/categories.js" asp-append-version="true"></script> }

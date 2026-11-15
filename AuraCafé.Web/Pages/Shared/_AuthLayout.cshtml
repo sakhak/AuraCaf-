@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#fff6fa" />
+    <title>@ViewData["Title"] - Aura Caf&#233;</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/login.css" asp-append-version="true" />
+</head>
+<body class="auth-body">
+    <a href="#loginMain" class="auth-skip">Skip to sign in</a>
+    <header class="auth-header">
+        <a asp-area="" asp-page="/Index" class="auth-brand"><span class="auth-brand-mark" aria-hidden="true">a.</span> Aura Caf&#233;</a>
+        <a asp-area="" asp-page="/Index" class="auth-home">Back to caf&#233; <span aria-hidden="true">&#8599;</span></a>
+    </header>
+    <main id="loginMain" class="auth-main">@RenderBody()</main>
+    <footer class="auth-footer">A little care in every cup. <span aria-hidden="true">&#9825;</span> <a asp-area="" asp-page="/Privacy">Privacy</a></footer>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

@@ -1,0 +1,34 @@
+@page
+@model AuraCafé.Web.Areas.Cashier.Pages.Dashboard.IndexModel
+@using AuraCafé.Web.Models
+@{ ViewData["Title"] = "Cashier Dashboard"; }
+<link rel="stylesheet" href="~/css/dashboard.css" asp-append-version="true" />
+<div class="dashboard cashier-dashboard">
+<header class="cashier-welcome"><div><p class="cashier-eyebrow">WELCOME TO YOUR COUNTER</p><h1>Hello, @Model.CashierName</h1><p class="text-muted mb-0">A fresh shift, a favorite cup, and a little care in every order.</p></div><span class="cashier-welcome-mark" aria-hidden="true">&#9825;</span></header>
+<div class="cashier-shortcuts">
+    <section class="cashier-shortcut"><span class="cashier-shortcut-icon" aria-hidden="true"><partial name="/Pages/Shared/_CafeMark.cshtml" /></span><h2>Point of Sale</h2><p class="text-muted">Find menu favorites and build the next customer order.</p><a class="btn btn-primary" asp-area="Cashier" asp-page="/POS/Index">Open POS</a></section>
+    <section class="cashier-shortcut"><span class="cashier-shortcut-icon" aria-hidden="true">&#9776;</span><h2>My Orders</h2><p class="text-muted">Review your orders and collect payment when ready.</p><a class="btn btn-outline-primary" asp-area="Cashier" asp-page="/Orders/Index">View Orders</a></section>
+    <section class="cashier-shortcut"><span class="cashier-shortcut-icon" aria-hidden="true">&#9687;</span><h2>My Shift</h2><p class="text-muted">Clock in, check your drawer and finish your shift.</p><a class="btn btn-outline-primary" asp-area="Cashier" asp-page="/MyShift/Index">View Shift</a></section>
+</div>
+
+<div class="dash-main-grid">
+    <section class="dash-card"><div class="dash-section-heading"><div><p class="dash-eyebrow">FRESH FROM YOUR COUNTER</p><h2>Your recent orders</h2></div><a asp-page="/Orders/Index" class="dash-text-link">All orders &#8599;</a></div>
+        @if (Model.OrdersError is not null) { <p class="dash-empty-note" role="status">@Model.OrdersError</p> }
+        else if (Model.RecentOrders.Count == 0) { <div class="dash-empty"><span aria-hidden="true"><partial name="/Pages/Shared/_CafeMark.cshtml" /></span><h3>Your first cup is waiting</h3><p>No orders yet. Open POS when you're ready to get started.</p></div> }
+        else { <div class="table-responsive"><table class="table dash-orders"><caption class="visually-hidden">Your five most recent orders</caption><thead><tr><th scope="col">Order</th><th scope="col">Total</th><th scope="col">Status</th><th scope="col">Action</th></tr></thead><tbody>
+            @foreach (var order in Model.RecentOrders) { <tr><th scope="row">@order.OrderNumber<small>@ReportDisplay.Local(order.CreatedAtUtc)</small></th><td>@ReportDisplay.Money(order.TotalCents)</td><td><span class="dash-chip">@order.Status</span></td><td>@if (order.Status == "Pending") { <a asp-page="/Payments/Create" asp-route-orderId="@order.Id" class="btn btn-outline-primary btn-sm" aria-label="Collect payment for @order.OrderNumber">Collect</a> } else if (order.Status == "Paid") { <a asp-page="/Payments/Create" asp-route-orderId="@order.Id" class="btn btn-outline-primary btn-sm" aria-label="View receipt for @order.OrderNumber">Receipt</a> } else { <span class="text-muted">&#8212;</span> }</td></tr> }
+        </tbody></table></div> }
+    </section>
+    <section class="dash-card dash-shift"><div class="dash-section-heading"><div><p class="dash-eyebrow">YOUR LITTLE SHIFT CHECK</p><h2>Ready for the day?</h2></div><span class="dash-icon" aria-hidden="true">&#9687;</span></div>
+        @if (Model.ShiftError is not null) { <p class="dash-empty-note" role="status">@Model.ShiftError</p> }
+        else if (Model.Shift is { } shift)
+        {
+            <span class="dash-shift-state">Shift open</span><p class="text-muted small mt-3">Clocked in @ReportDisplay.Local(shift.ClockInUtc) (UTC+07:00)</p>
+            <dl class="dash-shift-floats"><div><dt>Opening USD float</dt><dd>@(shift.OpeningCashCents.HasValue ? ReportDisplay.Money(shift.OpeningCashCents.Value) : "Not recorded")</dd></div><div><dt>Opening KHR float</dt><dd>@(shift.OpeningCashRiel.HasValue ? ReportDisplay.Riel(shift.OpeningCashRiel.Value) : "Not recorded")</dd></div></dl>
+        }
+        else { <p class="dash-empty-note">You're off the clock. Count your opening drawer and clock in before taking an order.</p> }
+        <a asp-page="/MyShift/Index" class="btn btn-outline-primary mt-3">Open My Shift</a><p class="small text-muted mt-3 mb-0">One careful count makes a lovely close. Keep USD and KHR separate.</p>
+    </section>
+</div>
+<p class="dash-updated">@ReportDisplay.Today.ToString("dd MMM yyyy") &#183; Asia/Bangkok &#183; Made for your daily rhythm.</p>
+</div>

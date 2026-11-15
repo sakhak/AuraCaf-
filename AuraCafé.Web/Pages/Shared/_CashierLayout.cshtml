@@ -1,0 +1,98 @@
+@{
+    var currentPath = Context.Request.Path.Value ?? "";
+
+    string Active(string path) =>
+        currentPath.StartsWith(
+            path, StringComparison.OrdinalIgnoreCase)
+            ? "active" : "";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1" />
+
+    <title>@ViewData["Title"] - Aura Café Cashier</title>
+
+    <link rel="stylesheet"
+          href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet"
+          href="~/css/portals.css"
+          asp-append-version="true" />
+</head>
+
+<body class="portal-body cashier-theme">
+    <div class="portal-shell">
+
+        <aside class="portal-sidebar">
+            <a class="portal-brand cafe-brand" asp-area="Cashier" asp-page="/Dashboard/Index">
+                <span class="cafe-brand-emblem"><partial name="/Pages/Shared/_CafeMark.cshtml" /></span>
+                <span class="cafe-brand-copy"><span class="cafe-brand-name">Aura Caf&#233;<span class="cafe-brand-dot" aria-hidden="true">.</span></span><span class="cafe-brand-caption">Cashier corner &#9825;</span></span>
+            </a>
+
+            <nav class="nav flex-column">
+                <a class="nav-link @Active("/Cashier/Dashboard")"
+                   asp-area="Cashier"
+                   asp-page="/Dashboard/Index">
+                    Dashboard
+                </a>
+
+                <a class="nav-link @Active("/Cashier/POS")"
+                   asp-area="Cashier"
+                   asp-page="/POS/Index">
+                    Point of Sale
+                </a>
+
+                <a class="nav-link @Active("/Cashier/Orders")"
+                   asp-area="Cashier"
+                   asp-page="/Orders/Index">
+                    My Orders
+                </a>
+
+                <a class="nav-link @Active("/Cashier/MyShift")"
+                   asp-area="Cashier"
+                   asp-page="/MyShift/Index">
+                    My Shift
+                </a>
+            </nav>
+        </aside>
+
+        <div class="portal-main">
+
+            <header class="portal-header">
+                <div>
+                    <strong>Cashier corner</strong>
+                    <div class="small text-muted">
+                        A little care in every cup
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center gap-3">
+                    <span>@User.Identity?.Name</span>
+
+                    <form asp-area=""
+                          asp-page="/Account/Logout"
+                          method="post">
+                        <button type="submit"
+                                class="btn btn-outline-danger btn-sm">
+                            Logout
+                        </button>
+                    </form>
+                </div>
+            </header>
+
+            <main class="portal-content">
+                @RenderBody()
+            </main>
+
+        </div>
+    </div>
+
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js">
+    </script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

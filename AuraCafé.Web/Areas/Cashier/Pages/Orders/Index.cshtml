@@ -1,0 +1,141 @@
+﻿@page
+@model AuraCafé.Web.Areas.Cashier.Pages.Orders.IndexModel
+
+@{
+    ViewData["Title"] = "My Orders";
+
+    var cafeZone = TimeZoneInfo.FindSystemTimeZoneById(
+        "Asia/Phnom_Penh");
+
+    string DisplayTime(DateTime utc) =>
+        TimeZoneInfo.ConvertTimeFromUtc(
+            DateTime.SpecifyKind(utc, DateTimeKind.Utc),
+            cafeZone).ToString("dd MMM yyyy, hh:mm tt");
+}
+
+<div class="d-flex justify-content-between
+            align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold">My Orders</h2>
+        <p class="portal-muted">
+            View orders created by your cashier account.
+        </p>
+    </div>
+
+    <a asp-area="Cashier"
+       asp-page="/POS/Index"
+       class="btn btn-success">
+        + New Order
+    </a>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.ErrorMessage))
+{
+    <div class="alert alert-danger">
+        @Model.ErrorMessage
+    </div>
+}
+else
+{
+    <div class="portal-card">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>Order</th>
+                        <th>Date</th>
+                        <th>Shift</th>
+                        <th>Items</th>
+                        <th>Total</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @foreach (var order in Model.Orders)
+                    {
+                        <tr>
+                            <td>
+                                <strong>@order.OrderNumber</strong>
+                            </td>
+
+                            <td>
+                                @DisplayTime(order.CreatedAtUtc)
+                            </td>
+
+                            <td>#@order.WorkShiftId</td>
+
+                            <td>
+                                @foreach (var item in order.Items)
+                                {
+                                    <div class="small">
+                                        @item.ProductName × @item.Quantity
+                                    </div>
+                                }
+                            </td>
+
+                            <td>
+                                <strong>
+                                    $@((order.TotalCents / 100m).ToString("0.00"))
+                                </strong>
+                            </td>
+
+                            <td>
+                                @if (order.Status == "Pending")
+                                {
+                                    <span class="badge bg-warning text-dark">
+                                        Pending
+                                    </span>
+                                }
+                                else if (order.Status == "Paid")
+                                {
+                                    <span class="badge bg-success">
+                                        Paid
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">
+                                        @order.Status
+                                    </span>
+                                }
+                            </td>
+
+                            <td>
+                                @if (order.Status == "Pending")
+                                {
+                                    <a asp-area="Cashier"
+                                       asp-page="/Payments/Create"
+                                       asp-route-orderId="@order.Id"
+                                       class="btn btn-sm btn-success">
+                                        Collect Payment
+                                    </a>
+                                }
+                                else if (order.Status == "Paid")
+                                {
+                                    <span class="badge bg-success">
+                                        Paid
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">
+                                        @order.Status
+                                    </span>
+                                }
+                            </td>
+
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (Model.Orders.Count == 0)
+        {
+            <p class="text-muted text-center">
+                You have not created any orders yet.
+            </p>
+        }
+    </div>
+}

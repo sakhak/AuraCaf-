@@ -1,0 +1,11 @@
+@{
+    var currentPage = ViewContext.RouteData.Values["page"]?.ToString() ?? "";
+    var isLedger = currentPage.Contains("/Movements", StringComparison.OrdinalIgnoreCase);
+    var isRecipe = currentPage.Contains("/Recipes", StringComparison.OrdinalIgnoreCase);
+}
+<link rel="stylesheet" href="~/css/inventory.css" asp-append-version="true" />
+<nav class="inventory-tabs" aria-label="Inventory sections">
+    <a asp-area="Admin" asp-page="/Inventory/Index" class="@(!isLedger && !isRecipe ? "is-active" : "")" aria-current="@(!isLedger && !isRecipe ? "page" : null)"><span aria-hidden="true">&#9638;</span> Ingredients</a>
+    <a asp-area="Admin" asp-page="/Inventory/Movements" class="@(isLedger ? "is-active" : "")" aria-current="@(isLedger ? "page" : null)"><span aria-hidden="true">&#8644;</span> Movement Ledger</a>
+    <a asp-area="Admin" asp-page="/Inventory/Recipes" class="@(isRecipe ? "is-active" : "")" aria-current="@(isRecipe ? "page" : null)"><span aria-hidden="true">&#9776;</span> Product Recipes</a>
+</nav>

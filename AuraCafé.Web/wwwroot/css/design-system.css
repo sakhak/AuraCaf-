@@ -1,0 +1,199 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+
+/* Shared tokens. Keep money, payment states and permissions in server code. */
+:root {
+    --aura-primary: #176145;
+    --aura-primary-rgb: 23, 97, 69;
+    --aura-primary-hover: #104933;
+    --aura-cream: #eaf3ed;
+    --aura-background: #f4f8f5;
+    --aura-surface: #ffffff;
+    --aura-accent: #48a477;
+    --aura-success: #287a52;
+    --aura-warning: #d99224;
+    --aura-danger: #c94b4b;
+    --aura-danger-text: #b33b3b;
+    --aura-text: #203a2d;
+    --aura-muted: #5f7068;
+    --aura-border: #dce8e1;
+    --aura-input-border: #718777;
+    --aura-font: "Inter", "Segoe UI", Arial, sans-serif;
+    --aura-space-1: 0.25rem;
+    --aura-space-2: 0.5rem;
+    --aura-space-3: 0.75rem;
+    --aura-space-4: 1rem;
+    --aura-space-6: 1.5rem;
+    --aura-space-8: 2rem;
+    --aura-radius-sm: 0.5rem;
+    --aura-radius-md: 0.75rem;
+    --aura-radius-lg: 1rem;
+    --aura-shadow-sm: 0 2px 8px rgb(23 97 69 / 5%);
+    --aura-shadow-md: 0 8px 24px rgb(23 97 69 / 8%);
+    --aura-focus: var(--aura-primary);
+    --portal-bg: var(--aura-background);
+    --portal-sidebar: var(--aura-primary);
+    --portal-text: var(--aura-text);
+    --portal-accent: var(--aura-accent);
+}
+
+.portal-body {
+    --bs-body-color: var(--aura-text);
+    --bs-body-bg: var(--aura-background);
+    --bs-border-color: var(--aura-border);
+    --bs-primary: var(--aura-primary);
+    --bs-primary-rgb: var(--aura-primary-rgb);
+    --bs-success-rgb: 40, 122, 82;
+    --bs-warning-rgb: 217, 146, 36;
+    --bs-danger-rgb: 179, 59, 59;
+    --bs-secondary-color: var(--aura-muted);
+    --bs-link-color: var(--aura-primary);
+    --bs-link-hover-color: var(--aura-primary-hover);
+    font-family: var(--aura-font);
+    font-size: 0.9375rem;
+    line-height: 1.6;
+}
+
+.portal-body h1, .portal-body h2 {
+    font-size: clamp(1.625rem, 2vw, 1.875rem);
+    font-weight: 700;
+    line-height: 1.25;
+    letter-spacing: -0.025em;
+}
+
+.portal-body h3, .portal-body h4 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    line-height: 1.35;
+}
+
+.portal-body h5, .portal-body h6 { font-size: 1rem; font-weight: 600; }
+.portal-body small, .portal-body .small { font-size: 0.8125rem; }
+.portal-body .text-muted, .portal-body .portal-muted { color: var(--aura-muted) !important; }
+.portal-body .text-danger { color: var(--aura-danger-text) !important; }
+
+.portal-body .btn {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--aura-space-2);
+    border-radius: var(--aura-radius-sm);
+    font-weight: 600;
+}
+
+.portal-body .btn-primary {
+    --bs-btn-bg: var(--aura-primary);
+    --bs-btn-border-color: var(--aura-primary);
+    --bs-btn-hover-bg: var(--aura-primary-hover);
+    --bs-btn-hover-border-color: var(--aura-primary-hover);
+    --bs-btn-active-bg: var(--aura-primary-hover);
+    --bs-btn-active-border-color: var(--aura-primary-hover);
+    --bs-btn-disabled-bg: var(--aura-primary);
+    --bs-btn-disabled-border-color: var(--aura-primary);
+}
+
+.portal-body .btn-success {
+    --bs-btn-bg: var(--aura-success);
+    --bs-btn-border-color: var(--aura-success);
+    --bs-btn-hover-bg: #206241;
+    --bs-btn-hover-border-color: #206241;
+    --bs-btn-active-bg: #206241;
+    --bs-btn-active-border-color: #206241;
+    --bs-btn-disabled-bg: var(--aura-success);
+    --bs-btn-disabled-border-color: var(--aura-success);
+}
+
+.portal-body .btn-danger {
+    --bs-btn-bg: var(--aura-danger-text);
+    --bs-btn-border-color: var(--aura-danger-text);
+    --bs-btn-hover-bg: #962f2f;
+    --bs-btn-hover-border-color: #962f2f;
+    --bs-btn-active-bg: #962f2f;
+    --bs-btn-active-border-color: #962f2f;
+    --bs-btn-disabled-bg: var(--aura-danger-text);
+    --bs-btn-disabled-border-color: var(--aura-danger-text);
+}
+
+.portal-body .btn-outline-primary, .portal-body .btn-outline-secondary {
+    --bs-btn-color: var(--aura-primary);
+    --bs-btn-border-color: var(--aura-input-border);
+    --bs-btn-hover-bg: var(--aura-primary);
+    --bs-btn-hover-border-color: var(--aura-primary);
+    --bs-btn-active-bg: var(--aura-primary-hover);
+    --bs-btn-active-border-color: var(--aura-primary-hover);
+    --bs-btn-disabled-color: var(--aura-muted);
+    --bs-btn-disabled-border-color: var(--aura-input-border);
+}
+
+.portal-body .btn-outline-danger {
+    --bs-btn-color: var(--aura-danger-text);
+    --bs-btn-border-color: var(--aura-danger-text);
+    --bs-btn-hover-bg: var(--aura-danger-text);
+    --bs-btn-hover-border-color: var(--aura-danger-text);
+    --bs-btn-active-bg: #962f2f;
+    --bs-btn-active-border-color: #962f2f;
+    --bs-btn-disabled-color: var(--aura-danger-text);
+    --bs-btn-disabled-border-color: var(--aura-danger-text);
+}
+
+.portal-body .form-control, .portal-body .form-select {
+    min-height: 44px;
+    border-color: var(--aura-input-border);
+    border-radius: var(--aura-radius-sm);
+    background-color: var(--aura-surface);
+    color: var(--aura-text);
+}
+
+.portal-body .form-label { font-weight: 600; margin-bottom: var(--aura-space-2); }
+.portal-body .form-control::placeholder { color: var(--aura-muted); opacity: 1; }
+.portal-body .form-control:disabled, .portal-body .form-select:disabled { background-color: var(--aura-cream); }
+.portal-body .form-check-input:checked { background-color: var(--aura-primary); border-color: var(--aura-primary); }
+
+.portal-body :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+    outline: 3px solid var(--aura-focus);
+    outline-offset: 3px;
+    box-shadow: 0 0 0 3px var(--aura-surface);
+}
+
+.portal-body .form-control:focus, .portal-body .form-select:focus {
+    border-color: var(--aura-primary);
+    box-shadow: 0 0 0 0.2rem rgba(var(--aura-primary-rgb), 0.15);
+}
+
+.portal-body .portal-sidebar :focus-visible { outline-color: var(--aura-surface); box-shadow: none; }
+
+.portal-body .card, .portal-body .portal-card,
+.portal-body .pos-product-card, .portal-body .pos-cart {
+    background: var(--aura-surface);
+    border-color: var(--aura-border);
+    border-radius: var(--aura-radius-lg);
+    box-shadow: var(--aura-shadow-sm);
+}
+
+.portal-body .portal-card { padding: var(--aura-space-6); }
+.portal-body .portal-card h3 { font-size: 1.875rem; font-weight: 700; }
+.portal-body .pos-product-icon { background: var(--aura-cream); }
+.portal-body .pos-product-bottom strong { color: var(--aura-primary); }
+.portal-body .pos-cart-item, .portal-body .pos-cart-footer { border-color: var(--aura-border); }
+
+.portal-body .badge { border-radius: var(--aura-radius-sm); padding: 0.45em 0.7em; font-weight: 600; line-height: 1.4; }
+.portal-body .badge.bg-warning { color: var(--aura-text) !important; }
+.portal-body .alert { border-radius: var(--aura-radius-md); }
+.portal-body .alert-success { color: #1d573b; background: #edf6f0; border-color: #b7d6c3; }
+.portal-body .alert-warning { color: #694510; background: #fff5df; border-color: #ebcf99; }
+.portal-body .alert-danger { color: #8c2d2d; background: #fceeee; border-color: #e8baba; }
+.portal-body .table { --bs-table-color: var(--aura-text); --bs-table-border-color: var(--aura-border); }
+.portal-body .table-light { --bs-table-bg: var(--aura-cream); --bs-table-color: var(--aura-text); }
+
+@media (prefers-reduced-motion: reduce) {
+    .portal-body *, .portal-body *::before, .portal-body *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+@media (forced-colors: active) {
+    .portal-body :focus-visible { outline: 3px solid Highlight; box-shadow: none; }
+}

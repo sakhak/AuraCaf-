@@ -1,0 +1,34 @@
+@page "{productId:int?}"
+@model AuraCafé.Web.Areas.Admin.Pages.Inventory.RecipesModel
+@{ ViewData["Title"] = "Product Recipes"; }
+<div class="inventory-workspace">
+<header class="inventory-heading"><div><p class="inventory-eyebrow">MENU &amp; INGREDIENTS</p><h1>Product Recipes</h1><p class="text-muted mb-0">Define the ingredients required for one product.</p></div><a asp-page="./Index" class="btn btn-outline-primary">Back to ingredients</a></header><partial name="_InventoryNav" />
+<p class="text-muted">Saving a recipe does not deduct or reserve stock. Inventory usage is recorded separately.</p>
+@if (Model.SuccessMessage is not null) { <div class="alert alert-success" role="status">@Model.SuccessMessage</div> }
+@if (Model.ErrorMessage is not null) { <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div> }
+<form method="get" asp-page="./Recipes" asp-route-ProductId="" class="portal-card mb-4"><label asp-for="ProductId" class="form-label">Product</label><div class="d-flex flex-wrap gap-3"><select asp-for="ProductId" class="form-select" style="max-width: 480px"><option value="">Select product</option>@foreach (var product in Model.Products) { <option value="@product.Id">@product.Name @(product.IsActive ? "" : "(inactive)")</option> }</select><button type="submit" class="btn btn-primary">Load Recipe</button></div></form>
+@if (Model.Recipe is { } recipe)
+{
+    <div class="inventory-recipe-grid"><section class="portal-card mb-4"><h2 class="h4">@recipe.ProductName</h2>
+        <div class="table-responsive"><table class="table"><thead><tr><th scope="col">Ingredient</th><th scope="col">Required per product</th><th scope="col">Status</th><th scope="col">Action</th></tr></thead><tbody>
+            @foreach (var line in recipe.Lines)
+            { <tr><td>@line.Name</td><td>@line.QuantityRequired @line.Unit</td><td>@(line.IsActive ? "Active" : "Inactive - reactivate or remove")</td><td><form method="post" asp-page-handler="Remove" asp-route-ProductId="@recipe.ProductId" data-inventory-confirm="Remove this ingredient from the recipe? Stock is not changed."><input type="hidden" name="IngredientId" value="@line.IngredientId" /><button type="submit" class="btn btn-outline-danger btn-sm">Remove</button></form></td></tr> }
+            @if (recipe.Lines.Count == 0) { <tr><td colspan="4" class="text-muted">No ingredients in this recipe.</td></tr> }
+        </tbody></table></div>
+        @if (recipe.Lines.Count > 0)
+        {
+            <form method="post" asp-page-handler="Clear" asp-route-ProductId="@recipe.ProductId" data-inventory-confirm="Clear every ingredient from this product recipe? Stock and movement history are not changed."><button type="submit" class="btn btn-outline-danger">Clear Recipe</button></form>
+        }
+    </section>
+    <section class="portal-card"><h2 class="h4">Add or update a recipe ingredient</h2>
+        <form method="get" class="mb-3"><input type="hidden" name="ProductId" value="@recipe.ProductId" /><label asp-for="IngredientSearch" class="form-label">Search active ingredients</label><div class="d-flex gap-2"><input asp-for="IngredientSearch" class="form-control" maxlength="150" /><button type="submit" class="btn btn-outline-primary">Search</button></div><p class="form-text">Showing up to 20 active matches. Refine the search to find another ingredient.</p></form>
+        <form method="post" asp-page-handler="Save" asp-route-ProductId="@recipe.ProductId" data-inventory-submit>
+            <div asp-validation-summary="All" class="text-danger" role="alert"></div>
+            <div class="mb-3"><label asp-for="IngredientId" class="form-label">Ingredient / base unit</label><select asp-for="IngredientId" class="form-select"><option value="0">Select ingredient</option>@foreach (var ingredient in Model.Ingredients) { <option value="@ingredient.Id">@ingredient.Name (@ingredient.Unit)</option> }</select><span asp-validation-for="IngredientId" class="text-danger"></span></div>
+            <div class="mb-3"><label asp-for="QuantityRequired" class="form-label">Whole base units required for one product</label><input asp-for="QuantityRequired" type="number" step="1" min="1" class="form-control" required /><span asp-validation-for="QuantityRequired" class="text-danger"></span></div>
+            <button type="submit" class="btn btn-primary">Save Recipe Ingredient</button>
+        </form>
+    </section></div>
+}
+</div>
+@section Scripts { <script src="~/js/inventory.js" asp-append-version="true"></script> }

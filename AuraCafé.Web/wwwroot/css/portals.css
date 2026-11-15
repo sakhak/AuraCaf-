@@ -1,0 +1,195 @@
+
+@import url("./design-system.css");
+
+body.portal-body {
+    margin: 0;
+    background: var(--portal-bg);
+    color: var(--portal-text);
+    font-family: var(--aura-font);
+}
+
+.portal-shell {
+    display: flex;
+    min-height: 100vh;
+}
+
+.portal-sidebar {
+    width: 255px;
+    flex-shrink: 0;
+    background: var(--portal-sidebar);
+    color: white;
+    padding: 24px 14px;
+}
+
+.portal-brand {
+    font-size: 22px;
+    font-weight: 750;
+    padding: 8px 14px 26px;
+}
+
+.portal-sidebar .nav-link {
+    color: var(--aura-cream);
+    padding: 12px 15px;
+    border-radius: 10px;
+    margin-bottom: 5px;
+    text-decoration: none;
+}
+
+    .portal-sidebar .nav-link:hover,
+    .portal-sidebar .nav-link.active {
+        background: var(--aura-primary-hover);
+        color: white;
+    }
+
+.portal-main {
+    flex: 1;
+    min-width: 0;
+}
+
+.portal-header {
+    background: white;
+    border-bottom: 1px solid var(--aura-border);
+    padding: 18px 28px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.portal-content {
+    padding: 28px;
+}
+
+.portal-card {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 24px;
+    height: 100%;
+    box-shadow: 0 3px 12px rgba(0,0,0,.03);
+}
+
+    .portal-card h3 {
+        font-size: 28px;
+        font-weight: 750;
+    }
+
+.portal-muted {
+    color: #64748b;
+}
+
+
+@media (max-width: 768px) {
+    .portal-shell {
+        flex-direction: column;
+    }
+
+    .portal-sidebar {
+        width: 100%;
+        padding: 12px;
+    }
+
+    .portal-brand {
+        padding: 8px;
+    }
+
+    .portal-sidebar nav {
+        display: flex;
+        overflow-x: auto;
+        gap: 6px;
+    }
+
+    .portal-sidebar .nav-link {
+        white-space: nowrap;
+    }
+
+    .portal-header,
+    .portal-content {
+        padding: 16px;
+    }
+}
+
+/* Cashier uses its own palette; shared components inherit these tokens. */
+.portal-body.cashier-theme {
+    --aura-primary: #9d3d6b;
+    --aura-primary-rgb: 157, 61, 107;
+    --aura-primary-hover: #7e2c54;
+    --aura-cream: #fce8f1;
+    --aura-background: #fff7fb;
+    --aura-accent: #df8bb1;
+    --aura-text: #3b2632;
+    --aura-muted: #755d6a;
+    --aura-border: #efd5e2;
+    --aura-input-border: #9d788b;
+    --aura-focus: var(--aura-primary);
+    --aura-radius-sm: .875rem;
+    --aura-radius-md: 1.125rem;
+    --aura-radius-lg: 1.5rem;
+    --aura-shadow-sm: 0 3px 12px rgb(157 61 107 / 5%);
+    --aura-shadow-md: 0 8px 24px rgb(157 61 107 / 8%);
+    --portal-bg: var(--aura-background);
+    --portal-sidebar: #fce4ef;
+    --portal-text: var(--aura-text);
+    --portal-accent: var(--aura-accent);
+}
+.cashier-theme .portal-sidebar { color: var(--aura-text); border-right: 1px solid var(--aura-border); }
+.cashier-theme .portal-sidebar .nav-link { color: var(--aura-primary-hover); border-radius: 16px; }
+.cashier-theme .portal-sidebar .nav-link:hover { color: var(--aura-primary-hover); background: #f6ccdf; }
+.cashier-theme .portal-sidebar .nav-link.active { color: white; background: var(--aura-primary); }
+.cashier-theme .portal-header { border-bottom-color: var(--aura-border); }
+.portal-body.cashier-theme .portal-sidebar :focus-visible { outline-color: var(--aura-primary); box-shadow: 0 0 0 2px white; }
+.portal-body.cashier-theme .btn-success {
+    --bs-btn-bg: var(--aura-primary); --bs-btn-border-color: var(--aura-primary);
+    --bs-btn-hover-bg: var(--aura-primary-hover); --bs-btn-hover-border-color: var(--aura-primary-hover);
+    --bs-btn-active-bg: var(--aura-primary-hover); --bs-btn-active-border-color: var(--aura-primary-hover);
+    --bs-btn-disabled-bg: var(--aura-primary); --bs-btn-disabled-border-color: var(--aura-primary);
+}
+.portal-body.cashier-theme .btn-outline-success {
+    --bs-btn-color: var(--aura-primary); --bs-btn-border-color: var(--aura-primary);
+    --bs-btn-hover-color: white; --bs-btn-hover-bg: var(--aura-primary); --bs-btn-hover-border-color: var(--aura-primary);
+    --bs-btn-active-color: white; --bs-btn-active-bg: var(--aura-primary-hover); --bs-btn-active-border-color: var(--aura-primary-hover);
+    --bs-btn-disabled-color: var(--aura-primary); --bs-btn-disabled-border-color: var(--aura-primary);
+}
+.cashier-theme .pos-cart { border-top: 4px solid var(--aura-accent); }
+.cashier-theme .pos-cart-footer strong { color: var(--aura-primary-hover); }
+.cashier-theme .pos-product-card:hover { box-shadow: var(--aura-shadow-md); }
+.cashier-theme .table thead th { background: var(--aura-cream); color: var(--aura-primary-hover); }
+.cashier-welcome { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 20px; padding: 28px; background: var(--aura-cream); border: 1px solid var(--aura-border); border-radius: 26px; margin-bottom: 24px; }
+.cashier-welcome-mark { display: grid; place-items: center; width: 72px; height: 72px; border-radius: 26px; color: var(--aura-primary); background: white; font-size: 38px; }
+.cashier-eyebrow { color: var(--aura-primary); letter-spacing: .12em; font-size: .7rem; font-weight: 700; margin-bottom: 8px; }
+.cashier-shortcuts { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 20px; }
+.cashier-shortcut { background: white; padding: 24px; border: 1px solid var(--aura-border); border-radius: 24px; }
+.cashier-shortcut-icon { display: grid; place-items: center; width: 48px; height: 48px; color: var(--aura-primary); background: var(--aura-cream); border-radius: 17px; font-size: 24px; margin-bottom: 18px; }
+.cashier-shortcut h2 { font-size: 1.125rem; letter-spacing: normal; }
+.portal-header { gap: 16px; flex-wrap: wrap; }
+.portal-header > div { min-width: 0; overflow-wrap: anywhere; }
+@media (max-width: 767.98px) {
+    .portal-body .portal-sidebar nav { flex-direction: row !important; flex-wrap: nowrap; }
+    .portal-sidebar .nav-link { flex-shrink: 0; }
+    .cashier-shortcuts { grid-template-columns: minmax(0,1fr); }
+    .cashier-welcome { padding: 20px; }
+}
+
+/* One scalable cafe mark for both portals, inheriting each portal palette. */
+.cafe-mark { display: block; width: 100%; height: 100%; flex-shrink: 0; }
+.cafe-mark-cup { fill: var(--cafe-cup-fill, #fff9ef); }
+.cafe-mark-coffee { fill: var(--cafe-coffee-fill, #cc9e71); }
+.cafe-mark-heart { fill: #fff9ef; }
+.portal-sidebar .cafe-brand { display: flex; align-items: center; gap: 12px; padding: 8px 8px 25px; text-decoration: none; color: white; border-radius: 12px; }
+.cafe-brand-emblem { display: grid; place-items: center; width: 54px; height: 58px; padding: 7px; flex-shrink: 0; border: 1px solid rgb(255 255 255 / 35%); border-radius: 18px; background: #f0f8ed; color: #176145; box-shadow: 0 3px 8px rgb(0 0 0 / 5%); }
+.cafe-brand-copy { min-width: 0; display: block; }
+.cafe-brand-name { display: block; font-family: Georgia, "Times New Roman", serif; font-size: 1.55rem; font-weight: 700; letter-spacing: -.04em; line-height: 1.2; white-space: nowrap; }
+.cafe-brand-dot { color: #bfe9bc; }
+.cafe-brand-caption { display: block; margin-top: 7px; font-size: .56rem; font-weight: 600; letter-spacing: .13em; line-height: 1.5; color: #d9efdf; }
+.cashier-theme .portal-sidebar .cafe-brand { color: var(--aura-primary-hover); }
+.cashier-theme .cafe-brand-emblem { background: #fff9fc; color: var(--aura-primary); border-color: #e8bcd0; border-radius: 20px; --cafe-coffee-fill: #e7b5c3; }
+.cashier-theme .cafe-brand-dot { color: var(--aura-primary); }
+.cashier-theme .cafe-brand-caption { color: var(--aura-muted); font-size: .6875rem; letter-spacing: .025em; font-weight: 500; }
+.cashier-shortcut-icon .cafe-mark { width: 37px; height: 37px; }
+.pos-image-fallback .cafe-mark { width: 68px; height: 68px; margin: auto; color: var(--aura-primary); }
+@media (max-width: 768px) {
+    .portal-sidebar .cafe-brand { padding: 4px 6px 14px; gap: 10px; }
+    .cafe-brand-emblem { width: 43px; height: 46px; border-radius: 14px; padding: 5px; }
+    .cafe-brand-name { font-size: 1.375rem; }
+    .cafe-brand-caption { margin-top: 3px; }
+    .cashier-theme .cafe-brand-emblem { border-radius: 16px; }
+}

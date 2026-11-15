@@ -1,0 +1,34 @@
+@page
+@model AuraCafé.Web.Areas.Admin.Pages.Settings.PaymentQrModel
+@{ ViewData["Title"] = "Merchant QR"; }
+<div class="mb-4"><h1 class="h2">Merchant QR</h1><p class="text-muted">Save once. Cashiers select QR at checkout to show it to the customer.</p></div>
+@if (Model.SuccessMessage is not null) { <div class="alert alert-success" role="status">@Model.SuccessMessage</div> }
+<div class="row g-4">
+    <section class="col-lg-6"><div class="portal-card">
+        <h2 class="h5">Upload merchant QR</h2>
+        <p>Choose your original ABA / Bakong KHQR image. Replacing it changes the QR shown for future checkouts.</p>
+        <form method="post" enctype="multipart/form-data">
+            <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+            <label asp-for="QrImage" class="form-label">QR image from computer</label>
+            <input asp-for="QrImage" type="file" accept="image/png,image/jpeg,image/webp" class="form-control" required aria-describedby="qrHelp" />
+            <span asp-validation-for="QrImage" class="text-danger"></span>
+            <p id="qrHelp" class="small text-muted mt-2">PNG, JPG or WebP, maximum 5 MB. Upload the original image without editing the QR.</p>
+            <button class="btn btn-primary" type="submit">Save merchant QR</button>
+        </form>
+        <p class="small text-muted mt-3 mb-0">This saves the image for display. It does not enable automatic payment verification or currency conversion.</p>
+    </div></section>
+    <section class="col-lg-6"><div class="portal-card">
+        <h2 class="h5">Current checkout QR</h2>
+        @if (Model.Current is { } qr)
+        {
+            <img src="@qr.ImageUrl" alt="Saved merchant QR" class="img-fluid d-block mx-auto" style="max-height: 480px" />
+            <p class="small text-muted mt-3">Updated @AuraCafé.Web.Models.ReportDisplay.Local(qr.UpdatedAtUtc) (UTC+07:00) by @qr.UpdatedBy</p>
+        }
+        else { <p class="text-muted">No merchant QR saved yet. Upload an image to make it available at checkout.</p> }
+    </div></section>
+</div>
+
+<section class="portal-card mt-4"><h2 class="h5">Bakong sandbox connection</h2><p>Verify the API server's test credentials and receiving account. Keep tokens in server configuration, never in an image or browser field. This integration is USD-only and test confirmations do not affect real revenue.</p>
+@if (Model.ConnectionMessage is not null) { <p role="status" class="alert alert-info">@Model.ConnectionMessage</p> }
+<form method="post" asp-page-handler="Connection"><button type="submit" class="btn btn-outline-primary">Test Bakong connection</button></form>
+</section>

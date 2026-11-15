@@ -1,0 +1,65 @@
+@page
+@model AuraCafé.Web.Areas.Admin.Pages.Reports.IndexModel
+@using AuraCafé.Web.Models
+@{ ViewData["Title"] = "Sales Reports"; }
+<link rel="stylesheet" href="~/css/reports.css" asp-append-version="true" />
+<header class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <div><h1>Sales Overview</h1><p class="text-muted mb-0">Confirmed cash sales · USD · Asia/Bangkok (UTC+07:00)</p></div>
+    <a asp-area="Admin" asp-page="/Dashboard/Index" class="btn btn-outline-primary">Dashboard</a>
+</header>
+<form method="get" class="portal-card mb-4" id="salesReportFilter">
+    <div class="d-flex flex-wrap align-items-end gap-3">
+        <div><label asp-for="From" class="form-label">From</label><input asp-for="From" type="date" class="form-control" /></div>
+        <div><label asp-for="To" class="form-label">To (inclusive)</label><input asp-for="To" type="date" class="form-control" /></div>
+        <button type="submit" class="btn btn-primary">Apply dates</button>
+    </div>
+    <p class="text-muted small mb-0 mt-2">Maximum 366 days. Sales are dated by payment confirmation, not order creation.</p>
+</form>
+@if (Model.ErrorMessage is not null) { <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div> }
+@if (Model.Report is { } report)
+{
+    <div class="report-kpis mb-4">
+        @foreach (var metric in new[] { ("Revenue", ReportDisplay.Money(report.RevenueCents)), ("Paid orders", report.PaidOrders.ToString()), ("Cash received", ReportDisplay.Money(report.CashReceivedCents)), ("Change given", ReportDisplay.Money(report.ChangeCents)) })
+        {
+            <article class="portal-card"><h2 class="h6">@metric.Item1</h2><p class="report-value mb-0">@metric.Item2</p></article>
+        }
+    </div>
+    <p class="text-muted">Net cash retained: <strong>@ReportDisplay.Money(report.NetCashCents)</strong>. Opening float is excluded from sales. Generated @ReportDisplay.Local(report.GeneratedAtUtc).</p>
+    @if (report.PaidOrders == 0) { <div class="alert alert-info" role="status">No completed payments in this period.</div> }
+    <section class="portal-card mb-4" aria-labelledby="dailyHeading">
+        <h2 id="dailyHeading" class="h4">Daily revenue</h2>
+        <p class="text-muted small">Only dates with completed sales are shown. Bar length is relative to this period's highest daily revenue.</p>
+        @if (report.Daily.Count > 0)
+        {
+            var max = Math.Max(1, report.Daily.Max(d => d.RevenueCents));
+            <div class="report-chart" role="list" aria-label="Daily sales chart" tabindex="0">
+                @foreach (var day in report.Daily)
+                {
+                    var width = (day.RevenueCents * 100m / max).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+                    <div class="report-bar-row" role="listitem"><span>@day.Date.ToString("dd MMM yyyy")</span><div class="report-bar-track" aria-hidden="true"><div class="report-bar" style="width: @(width)%"></div></div><strong>@ReportDisplay.Money(day.RevenueCents)</strong><span class="small">@day.PaidOrders paid orders</span></div>
+                }
+            </div>
+        }
+        else { <p class="text-muted">No sales to chart.</p> }
+    </section>
+    <section class="portal-card mb-4">
+        <h2 class="h4">Monthly revenue</h2><p class="text-muted small">First/last month totals cover only the selected dates.</p>
+        <div class="table-responsive" tabindex="0" role="region" aria-label="Monthly revenue">
+            <table class="table"><thead><tr><th scope="col">Month</th><th scope="col">Paid orders</th><th scope="col">Revenue</th></tr></thead><tbody>@foreach (var month in report.Monthly) { <tr><td>@month.Date.ToString("MMM yyyy")</td><td>@month.PaidOrders</td><td>@ReportDisplay.Money(month.RevenueCents)</td></tr> }</tbody></table>
+        </div>
+    </section>
+    <section class="portal-card mb-4">
+        <h2 class="h4">Sales by collecting cashier</h2>
+        <div class="table-responsive" tabindex="0" role="region" aria-label="Cashier sales">
+            <table class="table"><thead><tr><th scope="col">Cashier</th><th scope="col">Paid orders</th><th scope="col">Revenue</th><th scope="col">Cash received</th><th scope="col">Change</th></tr></thead><tbody>@foreach (var cashier in report.Cashiers) { <tr><td>@cashier.Name (#@cashier.StaffId)</td><td>@cashier.PaidOrders</td><td>@ReportDisplay.Money(cashier.RevenueCents)</td><td>@ReportDisplay.Money(cashier.CashReceivedCents)</td><td>@ReportDisplay.Money(cashier.ChangeCents)</td></tr> }</tbody></table>
+        </div>
+    </section>
+    <section class="portal-card">
+        <h2 class="h4">Best-selling products</h2><p class="text-muted small">Top 20 by units sold. Revenue uses stored sale-time line subtotals. A historical sold name labels each product.</p>
+        <div class="table-responsive" tabindex="0" role="region" aria-label="Best-selling products">
+            <table class="table"><thead><tr><th scope="col">Product</th><th scope="col">Quantity sold</th><th scope="col">Revenue</th></tr></thead><tbody>@foreach (var product in report.Products) { <tr><td>@product.Name (#@product.ProductId)</td><td>@product.Quantity</td><td>@ReportDisplay.Money(product.RevenueCents)</td></tr> }</tbody></table>
+        </div>
+    </section>
+    <p class="text-muted small mt-3">Cash payments only. Discounts, taxes and refunds are not configured. Product totals shown are the top 20, not an additional revenue total.</p>
+}
+@section Scripts { <script src="~/js/reports.js" asp-append-version="true"></script> }

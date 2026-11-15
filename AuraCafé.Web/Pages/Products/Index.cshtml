@@ -1,120 +1,62 @@
-
 @page
 @model AuraCafé.Web.Pages.Products.IndexModel
-
-@{
-    ViewData["Title"] = "Product Management";
-}
-
+@{ ViewData["Title"] = "Product Management"; }
+<link rel="stylesheet" href="~/css/products.css" asp-append-version="true" />
 <div class="container py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="fw-bold mb-1">Product Management</h2>
-            <p class="text-muted mb-0">Manage your café menu and prices.</p>
-        </div>
-        <a asp-page="./Create" class="btn btn-primary">
-            + Add Product
-        </a>
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div><h1>Product Management</h1><p class="text-muted mb-0">Manage your café catalog, prices and sale availability.</p></div>
+        <a asp-page="./Create" class="btn btn-primary">Add Product</a>
     </div>
-
-    @if (!string.IsNullOrEmpty(Model.SuccessMessage))
-    {
-        <div class="alert alert-success">
-            @Model.SuccessMessage
+    @if (Model.SuccessMessage is not null) { <div class="alert alert-success" role="status">@Model.SuccessMessage</div> }
+    @if (TempData["ErrorMessage"] is string error) { <div class="alert alert-danger" role="alert">@error</div> }
+    @if (Model.ErrorMessage is not null) { <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div> }
+    <form method="get" class="card card-body mb-4">
+        <div class="row g-3 align-items-end">
+            <div class="col-lg-4"><label asp-for="Search" class="form-label">Search products</label><input asp-for="Search" type="search" class="form-control" placeholder="Name or description" /></div>
+            <div class="col-lg-2"><label asp-for="CategoryId" class="form-label">Category</label><select asp-for="CategoryId" class="form-select"><option value="">All categories</option>@foreach (var category in Model.Categories) { <option value="@category.Id">@category.Name</option> }</select></div>
+            <div class="col-lg-2"><label asp-for="Available" class="form-label">Availability</label><select asp-for="Available" class="form-select"><option value="">All</option><option value="true">Available</option><option value="false">Unavailable</option></select></div>
+            <div class="col-lg-2"><label asp-for="Active" class="form-label">Status</label><select asp-for="Active" class="form-select"><option value="">All</option><option value="true">Active</option><option value="false">Inactive</option></select></div>
+            <div class="col-lg-2 d-flex gap-2"><button class="btn btn-primary" type="submit">Filter</button><a asp-page="./Index" class="btn btn-outline-secondary">Reset</a></div>
         </div>
-    }
-
-    @if (TempData["ErrorMessage"] is string error)
+    </form>
+    @if (Model.ErrorMessage is null)
     {
-        <div class="alert alert-danger">@error</div>
-    }
-
-    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
-    {
-        <div class="alert alert-danger">
-            @Model.ErrorMessage
-        </div>
-    }
-    else
-    {
-        <div class="card border-0 shadow-sm">
-            <div class="card-body">
-                <div class="d-flex justify-content-between mb-3">
-                    <h5 class="fw-semibold">All Products</h5>
-                    <span class="badge bg-primary">
-                        @Model.Products.Count products
-                    </span>
-                </div>
-
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle">
-                        <thead class="table-light">
+        <div class="card card-body">
+            <p class="text-muted">@Model.TotalCount matching products</p>
+            <div class="table-responsive" tabindex="0" role="region" aria-label="Products">
+                <table class="table align-middle">
+                    <thead><tr><th scope="col">Product</th><th scope="col">Category</th><th scope="col">Price</th><th scope="col">Availability</th><th scope="col">Status</th><th scope="col">Actions</th></tr></thead>
+                    <tbody>
+                        @foreach (var product in Model.Products)
+                        {
                             <tr>
-                                <th>Product</th>
-                                <th>Category</th>
-                                <th>Price</th>
-                                <th>Status</th>
-                                <th class="text-end">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var product in Model.Products)
-                            {
-                                <tr>
-                                    <td>
-                                        <div class="fw-semibold">
-                                            @product.Name
-                                        </div>
-                                        <small class="text-muted">
-                                            @product.Description
-                                        </small>
-                                    </td>
-                                    <td>@product.CategoryName</td>
-                                    <td class="fw-semibold">
-                                        @((product.PriceCents / 100m).ToString("C",
-                                            System.Globalization.CultureInfo.GetCultureInfo("en-US")))
-                                    </td>
-                                    <td>
-                                        @if (product.IsAvailable)
-                                        {
-                                            <span class="badge bg-success">Available</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge bg-secondary">Unavailable</span>
-                                        }
-                                    </td>
-                                    <td class="text-end">
-                                        <a asp-page="./Edit"
-                                           asp-route-id="@product.Id"
-                                           class="btn btn-sm btn-outline-primary">
-                                            Edit
-                                        </a>
-
-                                        <form method="post"
-                                              asp-page-handler="Delete"
-                                              asp-route-id="@product.Id"
-                                              class="d-inline">
-                                            <button type="submit"
-                                                    class="btn btn-sm btn-outline-danger"
-                                                    onclick="return confirm('Delete this product?');">
-                                                Delete
-                                            </button>
+                                <td><div class="d-flex align-items-center gap-3">
+                                    @if (!string.IsNullOrEmpty(product.ImageUrl)) { <img src="@product.ImageUrl" alt="" class="product-thumbnail" loading="lazy" referrerpolicy="no-referrer" data-product-image /> }
+                                    <div><strong>@product.Name</strong><div class="small text-muted">@product.Description</div></div>
+                                </div></td>
+                                <td>@product.CategoryName</td><td>$@((product.PriceCents / 100m).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture))</td>
+                                <td><span class="badge @(product.IsAvailable ? "bg-success" : "bg-secondary")">@(product.IsAvailable ? "Available" : "Unavailable")</span></td>
+                                <td><span class="badge @(product.IsActive ? "bg-success" : "bg-secondary")">@(product.IsActive ? "Active" : "Inactive")</span></td>
+                                <td><div class="d-flex flex-wrap gap-2"><a asp-page="./Edit" asp-route-id="@product.Id" class="btn btn-outline-primary btn-sm">Edit @(product.IsActive ? "" : "/ Activate")</a>
+                                    @if (product.IsActive)
+                                    {
+                                        <form method="post" asp-page-handler="Deactivate" asp-route-id="@product.Id" asp-route-Search="@Model.Search" asp-route-CategoryId="@Model.CategoryId" asp-route-Available="@Model.Available" asp-route-Active="@Model.Active" asp-route-PageNumber="@Model.PageNumber" data-confirm-deactivate>
+                                            <button type="submit" class="btn btn-outline-danger btn-sm">Deactivate</button>
                                         </form>
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-
-                @if (Model.Products.Count == 0)
-                {
-                    <div class="text-center py-5 text-muted">
-                        No products found. Add your first product.
-                    </div>
-                }
+                                    }
+                                </div></td>
+                            </tr>
+                        }
+                        @if (Model.Products.Count == 0) { <tr><td colspan="6" class="text-center text-muted py-5">No matching products. Adjust your filters or add a product.</td></tr> }
+                    </tbody>
+                </table>
             </div>
+            <nav aria-label="Product pages" class="d-flex flex-wrap align-items-center gap-3">
+                @if (Model.PageNumber > 1) { <a asp-page="./Index" asp-route-PageNumber="@(Model.PageNumber - 1)" asp-route-Search="@Model.Search" asp-route-CategoryId="@Model.CategoryId" asp-route-Available="@Model.Available" asp-route-Active="@Model.Active" class="btn btn-outline-primary">Previous</a> }
+                <span>Page @Model.PageNumber of @Model.TotalPages</span>
+                @if (Model.PageNumber < Model.TotalPages) { <a asp-page="./Index" asp-route-PageNumber="@(Model.PageNumber + 1)" asp-route-Search="@Model.Search" asp-route-CategoryId="@Model.CategoryId" asp-route-Available="@Model.Available" asp-route-Active="@Model.Active" class="btn btn-outline-primary">Next</a> }
+            </nav>
         </div>
     }
 </div>
+@section Scripts { <script src="~/js/products.js" asp-append-version="true"></script> }

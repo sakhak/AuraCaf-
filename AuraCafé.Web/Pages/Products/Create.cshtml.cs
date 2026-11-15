@@ -6,17 +6,21 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace AuraCafé.Web.Pages.Products;
 
+[RequestSizeLimit(6 * 1024 * 1024), RequestFormLimits(MultipartBodyLengthLimit = 6 * 1024 * 1024)]
 public class CreateModel : PageModel
 {
     private readonly ProductApiService _productApi;
+    private readonly ProductImageStore _images;
 
-    public CreateModel(ProductApiService productApi)
+    public CreateModel(ProductApiService productApi, ProductImageStore images)
     {
         _productApi = productApi;
+        _images = images;
     }
 
     [BindProperty]
     public ProductFormDto Product { get; set; } = new();
+    [BindProperty] public IFormFile? ImageUpload { get; set; }
 
     public List<CategoryDto> Categories { get; set; } = new();
 
@@ -50,12 +54,21 @@ public class CreateModel : PageModel
 
         try
         {
+            Product.ImageUrl = ImageUpload is null ? "" : await _images.SaveAsync(ImageUpload, HttpContext.RequestAborted);
             await _productApi.CreateAsync(Product);
 
             TempData["SuccessMessage"] =
                 "Product created successfully.";
 
             return RedirectToPage("./Index");
+        }
+        catch (ArgumentException ex)
+        {
+            ModelState.AddModelError(nameof(ImageUpload), ex.Message);
+        }
+        catch (IOException)
+        {
+            ModelState.AddModelError(nameof(ImageUpload), "The image could not be saved. Check the server's image-storage access.");
         }
         catch (HttpRequestException ex)
         {

@@ -1,4 +1,4 @@
-﻿namespace AuraCafé.API.Models;
+namespace AuraCafé.API.Models;
 
 public class Product
 {
@@ -7,6 +7,9 @@ public class Product
     public string Name { get; set; } = "";
 
     public string Description { get; set; } = "";
+
+    public string ImageUrl { get; set; } = "";
+    public bool IsActive { get; set; } = true;
 
     public int PriceCents { get; set; }
 

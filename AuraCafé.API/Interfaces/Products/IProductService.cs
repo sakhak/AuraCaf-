@@ -1,10 +1,11 @@
-﻿using AuraCafé.API.DTOs.Products;
+using AuraCafé.API.DTOs.Products;
 
-namespace AuraCafé.API.Interfaces;
+namespace AuraCafé.API.Interfaces.Products;
 
 public interface IProductService
 {
     Task<List<ProductResponseDto>> GetAllAsync();
+    Task<ProductPageDto> SearchAsync(string? search, int? categoryId, bool? available, bool? active, int page, int pageSize);
 
     Task<ProductResponseDto?> GetByIdAsync(int id);
 

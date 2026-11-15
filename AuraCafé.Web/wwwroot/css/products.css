@@ -1,0 +1,2 @@
+.product-thumbnail { width: 64px; height: 64px; object-fit: cover; border-radius: var(--aura-radius-sm); flex-shrink: 0; }
+.product-preview { width: 180px; max-width: 100%; aspect-ratio: 1; object-fit: cover; border: 1px solid var(--aura-border); border-radius: var(--aura-radius-md); }

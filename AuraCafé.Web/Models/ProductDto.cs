@@ -1,10 +1,11 @@
-
 using System.ComponentModel.DataAnnotations;
 
 namespace AuraCafé.Web.Models;
 
 public class ProductDto
 {
+    public string ImageUrl { get; set; } = "";
+    public bool IsActive { get; set; } = true;
     public int Id { get; set; }
     public string Name { get; set; } = "";
     public string Description { get; set; } = "";
@@ -17,10 +18,16 @@ public class ProductDto
 
 public class ProductFormDto
 {
+    [DisplayFormat(ConvertEmptyStringToNull = false)]
+    [StringLength(1000)]
+    [RegularExpression(@"^$|^https://[^\s]+$|^/product-images/[a-f0-9]{32}\.(png|jpg|webp)$", ErrorMessage = "Use an HTTPS image URL.")]
+    public string ImageUrl { get; set; } = "";
+    public bool IsActive { get; set; } = true;
     [Required(ErrorMessage = "Product name is required.")]
     [StringLength(150, MinimumLength = 2)]
     public string Name { get; set; } = "";
 
+    [DisplayFormat(ConvertEmptyStringToNull = false)]
     [StringLength(500)]
     public string Description { get; set; } = "";
 
@@ -31,4 +38,10 @@ public class ProductFormDto
     public int CategoryId { get; set; }
 
     public bool IsAvailable { get; set; } = true;
+}
+
+public class ProductPageDto
+{
+    public List<ProductDto> Items { get; set; } = [];
+    public int TotalCount { get; set; }
 }

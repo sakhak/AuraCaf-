@@ -1,0 +1,133 @@
+@page
+@model AuraCafé.Web.Areas.Admin.Pages.Shifts.IndexModel
+
+@{
+    ViewData["Title"] = "Shift Management";
+
+    var cafeZone = TimeZoneInfo.FindSystemTimeZoneById(
+        "Asia/Phnom_Penh");
+
+    string DisplayTime(DateTime utc) =>
+        TimeZoneInfo.ConvertTimeFromUtc(
+            DateTime.SpecifyKind(utc, DateTimeKind.Utc),
+            cafeZone).ToString("dd MMM yyyy, hh:mm tt");
+}
+
+<div class="mb-4">
+    <h2 class="fw-bold">Shift Management</h2>
+    <p class="portal-muted">
+        Monitor employee attendance and working hours.
+    </p>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.ErrorMessage))
+{
+    <div class="alert alert-danger">
+        @Model.ErrorMessage
+    </div>
+}
+else
+{
+    <div class="row g-3 mb-4">
+
+        <div class="col-md-4">
+            <div class="portal-card">
+                <p class="portal-muted">Open Shifts</p>
+                <h3>@Model.ActiveCount</h3>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="portal-card">
+                <p class="portal-muted">Completed Shifts</p>
+                <h3>@Model.CompletedCount</h3>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="portal-card">
+                <p class="portal-muted">
+                    Total Completed Hours
+                </p>
+                <h3>@Model.TotalHours.ToString("0.00")</h3>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="portal-card">
+        <h4 class="mb-3">Recent Employee Shifts</h4>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>Employee</th>
+                        <th>Clock In</th>
+                        <th>Clock Out</th>
+                        <th>Status</th>
+                        <th>Hours</th><th>Cash</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @foreach (var shift in Model.Shifts)
+                    {
+                        <tr>
+                            <td>
+                                <strong>@shift.StaffName</strong>
+                                <div class="small text-muted">
+                                    @shift.StaffCode
+                                </div>
+                            </td>
+
+                            <td>
+                                @DisplayTime(shift.ClockInUtc)
+                            </td>
+
+                            <td>
+                                @(shift.ClockOutUtc.HasValue
+                                                        ? DisplayTime(
+                                                        shift.ClockOutUtc.Value)
+                                                        : "Still working")
+                    </td>
+
+                            <td>
+                        @if (shift.Status == "Open")
+                                {
+                                    <span class="badge bg-success">
+                                        Working
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">
+                                        Completed
+                                    </span>
+                                }
+                        </td>
+
+                        <td>
+                            @(shift.HoursWorked.HasValue
+                                                    ? shift.HoursWorked.Value.ToString("0.00")
+                                                    : "—")
+                    </td>
+                <td><a asp-page="./Reconciliation" asp-route-id="@shift.Id">View drawer</a></td></tr>
+                                }
+                </tbody>
+            </table>
+        </div>
+
+        @if (Model.Shifts.Count == 0)
+        {
+            <p class="text-muted">
+                No shift records found.
+            </p>
+        }
+
+        <p class="small text-muted mt-3">
+            Showing up to 200 recent shifts.
+            Totals are based on the displayed records.
+        </p>
+    </div>
+}

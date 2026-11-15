@@ -1,0 +1,35 @@
+@page
+@model AuraCafé.Web.Areas.Admin.Pages.Staff.IndexModel
+@{ ViewData["Title"] = "Staff Management"; }
+<link rel="stylesheet" href="~/css/staff.css" asp-append-version="true" />
+<div class="staff-workspace">
+<header class="staff-heading"><div><p class="staff-eyebrow">PEOPLE &amp; ACCESS</p><h1>Staff Management</h1><p class="text-muted mb-0">A clear view of the people behind every cup.</p></div><a asp-page="./Create" class="btn btn-primary">+ Add Employee</a></header>
+@if (Model.SuccessMessage is not null) { <div class="alert alert-success" role="status">@Model.SuccessMessage</div> }
+@if (TempData["ErrorMessage"] is string error) { <div class="alert alert-danger" role="alert">@error</div> }
+@if (Model.ErrorMessage is not null) { <div class="alert alert-danger" role="alert">@Model.ErrorMessage <a asp-page="./Index" class="alert-link">Refresh staff</a></div> }
+else
+{
+    <section class="staff-metrics" aria-label="Team overview">
+        @foreach (var metric in new[] { ("Total employees", Model.TotalStaff, "All staff profiles"), ("Active employees", Model.ActiveCount, "Currently active employment"), ("Cashiers", Model.CashierCount, "Cashier-position profiles"), ("Linked accounts", Model.LoginCount, "Profiles with login accounts") })
+        { <article><span class="staff-metric-mark" aria-hidden="true">&#9671;</span><p>@metric.Item1</p><strong>@metric.Item2</strong><small>@metric.Item3</small></article> }
+    </section>
+    <section class="staff-directory" aria-labelledby="teamHeading">
+        <div class="staff-section-heading"><div><h2 id="teamHeading">Your team</h2><p class="text-muted small mb-0">Keep employee details and account access up to date.</p></div><span class="staff-directory-count">@Model.MatchingCount matching employees</span></div>
+        <nav class="staff-filter-tabs" aria-label="Employment filters"><a asp-page="./Index" class="@(string.IsNullOrEmpty(Model.Status) ? "is-active" : "")" aria-current="@(string.IsNullOrEmpty(Model.Status) ? "page" : null)">All employees</a><a asp-page="./Index" asp-route-Status="Active" class="@(Model.Status == "Active" ? "is-active" : "")" aria-current="@(Model.Status == "Active" ? "page" : null)">Active</a><a asp-page="./Index" asp-route-Status="Inactive" class="@(Model.Status == "Inactive" ? "is-active" : "")" aria-current="@(Model.Status == "Inactive" ? "page" : null)">Inactive</a></nav>
+        <form method="get" class="staff-filters"><div class="staff-search"><label asp-for="Search" class="visually-hidden">Search staff</label><input asp-for="Search" type="search" maxlength="150" class="form-control" placeholder="Search name, email or code..." /></div><div><label asp-for="Position" class="visually-hidden">Position</label><select asp-for="Position" class="form-select"><option value="">All positions</option><option value="Cashier">Cashier</option><option value="Barista">Barista</option></select></div><div><label asp-for="Status" class="visually-hidden">Employment status</label><select asp-for="Status" class="form-select"><option value="">All statuses</option><option value="Active">Active</option><option value="Inactive">Inactive</option></select></div><button type="submit" class="btn btn-primary">Filter</button><a asp-page="./Index" class="btn btn-outline-secondary">Reset</a></form>
+        <div class="table-responsive" tabindex="0" role="region" aria-label="Staff directory"><table class="table staff-table align-middle"><thead><tr><th scope="col">Employee</th><th scope="col">Position</th><th scope="col">Hire date</th><th scope="col">Employment</th><th scope="col">Login account</th><th scope="col">Actions</th></tr></thead><tbody>
+            @foreach (var staff in Model.StaffMembers)
+            {
+                <tr><td><div class="staff-person"><span class="staff-avatar" aria-hidden="true">@System.Globalization.StringInfo.GetNextTextElement(staff.FullName)</span><div><strong>@staff.FullName</strong><span>@staff.Email</span><small>@staff.StaffCode</small></div></div></td><td><span class="staff-position">@staff.Position</span></td><td>@staff.HireDate.ToString("dd MMM yyyy")</td><td><span class="staff-status @(staff.EmploymentStatus == "Active" ? "is-active" : "is-inactive")"><span aria-hidden="true"></span>@staff.EmploymentStatus</span></td><td><span class="text-muted small">@(staff.HasLoginAccount ? "Linked account" : "No login account")</span></td><td><div class="staff-row-actions"><a asp-page="./Edit" asp-route-id="@staff.Id" class="btn btn-sm btn-outline-primary" aria-label="Edit @staff.FullName">Edit profile</a><form method="post" asp-page-handler="Status" asp-route-id="@staff.Id" asp-route-active="@(staff.EmploymentStatus != "Active")" asp-route-Search="@Model.Search" asp-route-Position="@Model.Position" asp-route-Status="@Model.Status" asp-route-PageNumber="@Model.PageNumber" data-staff-confirm="@(staff.EmploymentStatus == "Active" ? "Deactivate this employee? Their linked login account will lose access." : "Activate this employee and their linked login account?")"><button type="submit" class="btn btn-sm @(staff.EmploymentStatus == "Active" ? "btn-outline-danger" : "btn-outline-success")">@(staff.EmploymentStatus == "Active" ? "Deactivate" : "Activate")</button></form></div></td></tr>
+            }
+            @if (Model.StaffMembers.Count == 0) { <tr><td colspan="6"><div class="staff-empty"><span aria-hidden="true">&#9671;</span><h3>No employees found</h3><p class="text-muted">Try another search or add a new team member.</p><a asp-page="./Create" class="btn btn-primary">Add Employee</a></div></td></tr> }
+        </tbody></table></div>
+        <nav class="staff-pagination" aria-label="Staff pages"><span class="text-muted small">Page @Model.PageNumber of @Model.TotalPages</span><div class="d-flex gap-2">
+            @if (Model.PageNumber > 1) { <a asp-page="./Index" asp-route-PageNumber="@(Model.PageNumber - 1)" asp-route-Search="@Model.Search" asp-route-Position="@Model.Position" asp-route-Status="@Model.Status" class="btn btn-outline-primary">Previous</a> }
+            @if (Model.PageNumber < Model.TotalPages) { <a asp-page="./Index" asp-route-PageNumber="@(Model.PageNumber + 1)" asp-route-Search="@Model.Search" asp-route-Position="@Model.Position" asp-route-Status="@Model.Status" class="btn btn-outline-primary">Next</a> }
+        </div></nav>
+    </section>
+    <p class="staff-access-note">Deactivating an employee preserves their shifts, orders and payments. Linked account access is managed by the existing account policy.</p>
+}
+</div>
+@section Scripts { <script src="~/js/staff.js" asp-append-version="true"></script> }

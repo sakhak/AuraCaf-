@@ -1,0 +1,232 @@
+@page "{orderId:int}"
+@model AuraCafé.Web.Areas.Cashier.Pages.Payments.CreateModel
+
+@{
+    ViewData["Title"] = "Collect Payment";
+    var showQr = string.Equals(Request.Query["method"], "qr", StringComparison.OrdinalIgnoreCase);
+}
+
+<link rel="stylesheet" href="~/css/receipt.css" asp-append-version="true" />
+
+<div class="mb-4">
+    <h2 class="fw-bold">Collect Payment</h2>
+    <p class="portal-muted">
+        Complete a pending customer order.
+    </p>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.ErrorMessage))
+{
+    <div class="alert alert-danger">
+        @Model.ErrorMessage
+    </div>
+}
+
+@if (Model.Order is not null)
+{
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <div class="portal-card">
+                <h4>Order Details</h4>
+
+                <p class="text-muted">
+                    @Model.Order.OrderNumber
+                </p>
+
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Qty</th>
+                            <th>Subtotal</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @foreach (var item in Model.Order.Items)
+                        {
+                            <tr>
+                                <td>@item.ProductName</td>
+                                <td>@item.Quantity</td>
+                                <td>
+                                    $@((item.SubtotalCents / 100m).ToString("0.00"))
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+
+                <div class="d-flex justify-content-between">
+                    <strong>Order Total</strong>
+                    <h3>
+                        $@((Model.Order.TotalCents / 100m).ToString("0.00"))
+                    </h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="portal-card">
+                @if (Model.CompletedPayment is not null)
+                {
+                    <div class="alert alert-success">
+                        Payment completed successfully.
+                    </div>
+
+                    <p>
+                        <strong>Payment ID:</strong>
+                        #@Model.CompletedPayment.Id
+                    </p>
+
+                    <p>
+                        <strong>Cash received:</strong>
+                        $@((Model.CompletedPayment.CashReceivedCents / 100m).ToString("0.00"))
+                    </p>
+
+                    <p>
+                        <strong>Change due:</strong>
+                        $@((Model.CompletedPayment.ChangeCents / 100m).ToString("0.00"))
+                    </p>
+
+                    <button type="button" class="btn btn-success mb-3" id="printReceipt">Print customer receipt</button>
+                    <p class="small text-muted">Print only if the customer requests a receipt.</p>
+                    <a asp-area="Cashier" asp-page="/POS/Index" class="btn btn-outline-success mb-3">New order</a>
+                    <a asp-area="Cashier"
+                       asp-page="/Orders/Index"
+                       class="btn btn-success">
+                        Back to Orders
+                    </a>
+                }
+                else if (Model.Order.Status != "Pending")
+                {
+                    <div class="alert alert-warning">
+                        This order is not available for payment.
+                    </div>
+                }
+                else
+                {
+                    <fieldset class="mb-3">
+                        <legend class="h5">Payment method</legend>
+                        <div class="d-flex gap-3 flex-wrap">
+                            <label><input type="radio" name="checkoutMethod" value="cash" checked="@(!showQr)" /> Cash (USD)</label>
+                            <label><input type="radio" name="checkoutMethod" value="qr" checked="@showQr" /> Bakong / KHQR display</label>
+                        </div>
+                    </fieldset>
+                    <section id="qrCheckoutPanel" hidden="@(!showQr)" aria-label="Show customer QR">
+                        <div class="mb-3 p-3 border rounded"><strong class="d-block">Bakong sandbox connection</strong><p class="small text-muted">Test an order-specific USD QR and automatic verification. Test transactions do not settle this order.</p><a asp-page="/Payments/Sandbox" asp-route-orderId="@Model.Order.Id" class="btn btn-outline-primary">Open Bakong test checkout</a></div>
+                        <div class="alert alert-warning" role="status">QR display only. This order stays pending. A scan or screenshot does not confirm payment.</div>
+                        @if (Model.MerchantQr is not null)
+                        {
+                            <p>Your saved merchant QR is ready.</p>
+                            <button type="button" id="showCustomerQr" class="btn btn-success mb-3">Show QR to customer</button>
+                        }
+                        else
+                        {
+                            <div class="alert alert-info">No merchant QR saved. Ask an Admin to upload it in Merchant QR settings.</div>
+                        }
+                        <p class="small text-muted">Ask the customer to check the recipient and currency in their banking app. The order total is USD; no KHR conversion is applied here. Paid receipts require a confirmed backend payment.</p>
+                    </section>
+                    <section id="cashCheckoutPanel" hidden="@showQr">
+                    <h4 class="mb-3">Cash Payment</h4>
+
+                    <form method="post" id="cashPaymentForm">
+                        <input type="hidden"
+                               asp-for="Payment.OrderId" />
+
+                        <div asp-validation-summary="ModelOnly"
+                             class="text-danger"></div>
+
+                        <div class="mb-3">
+                            <label asp-for="Payment.CashReceived"
+                                   class="form-label">
+                                Cash Received (USD)
+                            </label>
+
+                            <input asp-for="Payment.CashReceived"
+                                   type="number"
+                                   min="0"
+                                   step="0.01"
+                                   class="form-control"
+                                   placeholder="10.00" />
+
+                            <span asp-validation-for="Payment.CashReceived"
+                                  class="text-danger"></span>
+                        </div>
+
+                        <button type="submit"
+                                id="confirmPaymentButton"
+                                class="btn btn-success w-100">
+                            Confirm Cash Payment
+                        </button>
+                    </form>
+
+                    <p class="text-muted small mt-3">
+                        Confirm only after physically
+                        receiving the customer's cash.
+                    </p>
+                    </section>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+
+@if (Model.CompletedPayment is { Status: "Completed" } paid && Model.Order is { Status: "Paid" } order)
+{
+    <section class="customer-receipt" aria-label="Customer receipt">
+        <h2>Aura Café</h2>
+        <p>Customer receipt | Paid | USD</p>
+        <p>Order: @order.OrderNumber<br />Payment: #@paid.Id<br />Cashier: @paid.CashierName<br />
+            @AuraCafé.Web.Models.ReportDisplay.Local(paid.PaidAtUtc) (UTC+07:00)</p>
+        <table>
+            <thead><tr><th>Item</th><th>Qty</th><th>USD</th></tr></thead>
+            <tbody>@foreach (var item in order.Items)
+            {
+                <tr><td>@item.ProductName<br /><small>@@ @((item.UnitPriceCents / 100m).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)) each</small></td><td>@item.Quantity</td><td>@((item.SubtotalCents / 100m).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture))</td></tr>
+            }</tbody>
+        </table>
+        <dl>
+            <dt>Total USD</dt><dd>@((paid.AmountCents / 100m).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture))</dd>
+            <dt>Cash received</dt><dd>@((paid.CashReceivedCents / 100m).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture))</dd>
+            <dt>Change USD</dt><dd>@((paid.ChangeCents / 100m).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture))</dd>
+        </dl>
+        <p class="receipt-thanks">Thank you for visiting. See you for another cup!</p>
+    </section>
+}
+
+@if (Model.Order is { Status: "Pending" } pending && Model.CompletedPayment is null)
+{
+    <dialog id="customerQrDialog" class="customer-qr-dialog" aria-labelledby="customerQrHeading">
+        <div class="customer-qr-content">
+            <h2 id="customerQrHeading">Scan to pay</h2>
+            <p>Order @pending.OrderNumber</p>
+            <p class="h3">USD @((pending.TotalCents / 100m).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture))</p>
+            <img id="customerQrImage" src="@Model.MerchantQr?.ImageUrl" alt="Selected merchant payment QR. Check the recipient and currency in your banking app." />
+            <p>Check the recipient and currency before paying.</p>
+            <p class="text-muted small">Awaiting verification. This display does not confirm payment.</p>
+            <button type="button" id="closeCustomerQr" class="btn btn-outline-secondary">Return to checkout</button>
+        </div>
+    </dialog>
+}
+
+@section Scripts {
+    <script src="~/js/checkout.js" asp-append-version="true"></script>
+    <script>
+        document.getElementById("printReceipt")?.addEventListener("click", () => window.print());
+        const form = document.getElementById("cashPaymentForm");
+
+        form?.addEventListener("submit", event => {
+            if (!confirm("Have you received the cash?")) {
+                event.preventDefault();
+                return;
+            }
+
+            const button =
+                document.getElementById("confirmPaymentButton");
+
+            button.disabled = true;
+            button.textContent = "Processing...";
+        });
+    </script>
+}
