@@ -217,11 +217,6 @@
         const form = document.getElementById("cashPaymentForm");
 
         form?.addEventListener("submit", event => {
-            if (!confirm("Have you received the cash?")) {
-                event.preventDefault();
-                return;
-            }
-
             const button =
                 document.getElementById("confirmPaymentButton");
 

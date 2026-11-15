@@ -3,3 +3,6 @@ document.getElementById("salesReportFilter")?.addEventListener("submit", event =
     if (button) { button.disabled = true; button.textContent = "Loading report..."; }
     event.currentTarget.setAttribute("aria-busy", "true");
 });
+
+document.getElementById("printSalesReport")?.addEventListener("click", () => window.print());
+window.addEventListener("pageshow", event => { if (event.persisted) window.location.reload(); });

@@ -137,6 +137,24 @@ Cash payment requires a valid Cashier JWT, active Cashier staff profile, open sh
 
 Staff behavior matches the current backend: creating a Cashier requires a password and creates a linked Identity login; creating a Barista creates a profile without a new login. Cashier account-type changes require a separate workflow and are not editable in the profile form. Staff directory paging currently happens in the Web server after loading the existing full staff endpoint; large workforces need API/database pagination.
 
+Point of Sale uses actual category buttons with available-product counts, combined name/description search, product image cards and visible in-cart quantities. Desktop shows categories, catalog and one cart; tablet/mobile use horizontal categories and a View cart bar opening the same cart in a native dialog. Quantity edits, category/search changes and drawer resizing preserve cart state. Clear cart uses the shared confirmation dialog. Only a server-returned cart after a failed POST is restored; there is no automatic local-storage resubmission. The order estimate is explicitly a preview, and the existing API confirms final prices. Cash and saved QR have separate guidance; QR display does not confirm payment. All payment endpoints, authorization, USD cents and optional paid receipt behavior remain unchanged. Files are the Cashier POS Razor view, `wwwroot/css/pos.css` and `wwwroot/js/pos.js` in Web.
+
+POS has an English / Khmer language selector in its header. It remembers `en` or `km` in browser local storage and translates the POS controls, search hints, cart counters, accessible labels, cashier navigation on that page and POS confirmation dialogs. It updates the document language and uses Khmer-capable system-font fallbacks. Switching languages keeps the cart, filters and selected payment method. Database product/category names, descriptions, staff names, URLs, form values and USD amounts are not translated or converted. API validation messages and subsequent payment/receipt pages remain English; this is POS interface localization, not a whole-application translation. Dictionary and switching behavior live in Web `wwwroot/js/pos-language.js`; dynamic cart text uses the same dictionary. Interactive switching, Khmer typography and narrow-screen layout still need manual browser review.
+
+Sales Reports uses the green Admin design with Today / Last 7 days / This month presets, custom inclusive dates, real completed-payment KPI cards, daily revenue bars, net cash retained, monthly totals, cashier results and ranked top-20 products. Export CSV downloads the current selected period through an Admin-only handler, with UTF-8 encoding, quoted cells and spreadsheet formula protection for names. Each CSV RecordType is an alternative breakdown; do not add Summary, Daily, Monthly, Cashier and ProductTop20 revenues together. Print report restores natural page flow and expands scrollable data; physical print output still needs manual verification. No report calculation or payment API was replaced.
+
+Shift Management uses real recent records with name/staff-code/shift-number search, Open/Closed filters, inclusive Bangkok clock-in date filters and twelve-row pages. Open shifts sort first. Summary cards describe the API's loaded recent set (up to 200), before filters; these are not all-time totals. Filtering and paging occur in the Web server after the existing capped API response. The read-only drawer view separates USD and KHR, expected versus counted amounts, signed differences and closing notes. Missing legacy values remain Not recorded/Not submitted. The shared UI is in `wwwroot/css/shift-management.css` and the Admin Shifts Razor pages.
+
+Portal sidebars and headers remain in place while main content scrolls. Long sidebars scroll independently; mobile navigation remains accessible above the content. Print styles restore natural page flow. Layout rules are shared in Web `wwwroot/css/portals.css`.
+
+### Styled confirmations and notices
+
+Admin and Cashier use a shared in-page dialog instead of the browser's localhost confirmation/alert popup. The Admin dialog inherits green; Cashier inherits pink; destructive actions use red. It covers order creation, cash collection, cart clearing, product/category changes, staff actions, inventory confirmations, shifts and cart limits.
+
+Cancel, the close button and Escape dismiss the dialog; confirmation resumes the original form with its submitter, validation and antiforgery fields. Existing submission guards run after approval. Keyboard focus starts on the safe cancellation action and returns to the trigger on close. Messages are inserted as text rather than HTML.
+
+Reusable files: `Pages/Shared/_ActionDialog.cshtml`, `wwwroot/css/dialogs.css` and `wwwroot/js/dialogs.js` within Web. Both portal layouts load them. Adjust styling there to customize all portal dialogs consistently. This is a presentation change; all authorization and payment validation stay on the server.
+
 ## Money, reporting and shifts
 
 - Real payment currency is USD, stored as integer cents. Never accept browser-calculated prices, totals or change as authoritative.
@@ -229,7 +247,7 @@ Controllers are the authoritative route inventory; see [API controllers](AuraCaf
 
 ## Verification
 
-The latest executed feature verification before this documentation consolidation passed **371 checks** using disposable SQLite and simulated Bakong responses. Both API and Web builds passed with zero warnings/errors. EF reported no model changes pending after the generated migration. These are historical executed results, not a fresh production audit or proof of successful live Bakong authentication.
+The latest executed feature verification including POS Khmer interface support passed **405 checks** using disposable SQLite and simulated Bakong responses. Both API and Web builds passed with zero warnings/errors. EF reported no model changes pending after the generated migration. Shared-dialog checks validate rendered markup/assets and integration; a headless browser attempt exited before rendering, so interactive dialog/keyboard behavior still requires manual checking. These are historical executed results, not a fresh production audit or proof of successful live Bakong authentication.
 
 The executable suite covers real HTTP/JWT/EF Core/SQLite and Web-to-API calls, permissions, validation, historical references, images, stock movements/recipes, sales/reconciliation, QR settings, antiforgery and sandbox matching/duplicate/expiry behavior. It does not use the working database.
 

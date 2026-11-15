@@ -1,215 +1,62 @@
 @page
 @model AuraCafé.Web.Areas.Cashier.Pages.POS.IndexModel
 @using System.Text.Json
-
+@using System.Globalization
 @{
     ViewData["Title"] = "Point of Sale";
-
-    var productsJson = JsonSerializer.Serialize(
-        Model.Products.Select(p => new
-        {
-            id = p.Id,
-            name = p.Name,
-            priceCents = p.PriceCents,
-            categoryId = p.CategoryId
-        }));
+    var categoryCounts = Model.Products.GroupBy(p => p.CategoryId).ToDictionary(g => g.Key,g => g.Count());
+    var categoryNames = Model.Categories.ToDictionary(c => c.Id,c => c.Name);
+    var productsJson = JsonSerializer.Serialize(Model.Products.Select(p => new { id = p.Id, name = p.Name, priceCents = p.PriceCents, categoryId = p.CategoryId, imageUrl = p.ImageUrl }));
 }
-
-<link rel="stylesheet"
-      href="~/css/pos.css"
-      asp-append-version="true" />
-
-<div class="pos-heading">
-    <div>
-        <h2 class="fw-bold mb-1">Point of Sale</h2>
-        <p class="text-muted">
-            Select products and create customer orders.
-        </p>
-    </div>
-
-    <a asp-area="Cashier"
-       asp-page="/Orders/Index"
-       class="btn btn-outline-success">
-        My Orders
-    </a>
-</div>
-
-@if (!string.IsNullOrWhiteSpace(Model.SuccessMessage))
-{
-    <div class="alert alert-success">
-        @Model.SuccessMessage
-    </div>
-}
-
-@if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
-{
-    <div class="alert alert-danger">
-        @Model.ErrorMessage
-    </div>
-}
-
-<div asp-validation-summary="ModelOnly"
-     class="text-danger mb-3"></div>
-
-@if (!Model.HasActiveShift)
-{
-    <div class="alert alert-warning">
-        You must clock in before creating an order.
-
-        <a asp-area="Cashier"
-           asp-page="/MyShift/Index"
-           class="alert-link">
-            Open My Shift
-        </a>
-    </div>
-}
-
+<link rel="stylesheet" href="~/css/pos.css" asp-append-version="true" />
+<div class="pos-workspace">
+<header class="pos-heading"><div><p class="pos-eyebrow">YOUR COUNTER, MADE SIMPLE</p><h1>Point of Sale</h1><p>Pick a favorite. Build the order. Make their day.</p></div><div class="pos-header-actions"><div class="pos-language-control" data-pos-no-translate><label for="posLanguage">Language / &#x1797;&#x17B6;&#x179F;&#x17B6;</label><select id="posLanguage" class="form-select" aria-label="Choose POS language"><option value="en" lang="en">English</option><option value="km" lang="km">&#x1797;&#x17B6;&#x179F;&#x17B6;&#x1781;&#x17D2;&#x1798;&#x17C2;&#x179A;</option></select></div><span class="pos-shift-state @(Model.HasActiveShift ? "is-open" : "is-closed")"><span aria-hidden="true"></span>@(Model.ErrorMessage is not null ? "Status unavailable" : Model.HasActiveShift ? "Shift open" : "Clock in required")</span><a asp-page="/Orders/Index" class="btn btn-outline-primary">My Orders <span aria-hidden="true">&#8599;</span></a></div></header>
+<div class="pos-workflow" aria-label="Checkout steps"><span><b>1</b> Choose items</span><span aria-hidden="true">&#8594;</span><span><b>2</b> Review cart</span><span aria-hidden="true">&#8594;</span><span><b>3</b> Collect payment</span></div>
+@if (!string.IsNullOrWhiteSpace(Model.SuccessMessage)) { <div class="alert alert-success" role="status">@Model.SuccessMessage</div> }
+@if (!string.IsNullOrWhiteSpace(Model.ErrorMessage)) { <div class="alert alert-danger" role="alert">@Model.ErrorMessage <a asp-page="./Index" class="alert-link">Refresh POS</a></div> }
+<div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+@if (!Model.HasActiveShift && Model.ErrorMessage is null) { <div class="pos-shift-notice"><div><strong>Let's open your shift first.</strong><p>Count your opening drawer and clock in before creating an order.</p></div><a asp-page="/MyShift/Index" class="btn btn-outline-primary">Open My Shift</a></div> }
+<noscript><div class="alert alert-warning">Enable JavaScript to search the menu, build a cart and use checkout.</div></noscript>
 <div class="pos-layout">
-
-    <aside class="pos-categories" aria-labelledby="categoriesHeading">
-        <h3 id="categoriesHeading" class="h5 mb-3">Categories</h3>
-        <label for="categoryFilter" class="visually-hidden">Filter products by category</label>
-        <select id="categoryFilter"
-                class="form-select pos-category-list"
-                size="@Math.Clamp(Model.Categories.Count + 1, 4, 12)">
-            <option value="all" selected>All Categories</option>
-            @foreach (var category in Model.Categories)
-            {
-                <option value="@category.Id">@category.Name</option>
-            }
-        </select>
-    </aside>
-
-    <section class="pos-products" aria-label="Product catalog" tabindex="0">
-
-        <div class="pos-toolbar">
-            <label for="productSearch" class="visually-hidden">Search products</label>
-            <input id="productSearch"
-                   type="search"
-                   class="form-control"
-                   placeholder="Search products..." />
-
-        </div>
-
-        <div class="pos-product-grid" id="productGrid">
-
-            @foreach (var product in Model.Products)
-            {
-                <article class="pos-product-card"
-                         data-product-id="@product.Id"
-                         data-category-id="@product.CategoryId"
-                         data-name="@product.Name.ToLowerInvariant()">
-
-                    <div class="pos-product-icon">
-                        @if (!string.IsNullOrEmpty(product.ImageUrl))
-                        {
-                            <img src="@product.ImageUrl" class="pos-product-image" alt="" loading="lazy" referrerpolicy="no-referrer" data-pos-image />
-                        }
-                        <span class="pos-image-fallback" hidden="@(!string.IsNullOrEmpty(product.ImageUrl))" aria-hidden="true"><partial name="/Pages/Shared/_CafeMark.cshtml" /></span>
-                    </div>
-
-                    <div class="pos-product-info">
-                        <h5>@product.Name</h5>
-
-                        <p class="text-muted small">
-                            @product.Description
-                        </p>
-
-                        <div class="pos-product-bottom">
-                            <strong>
-                                $@((product.PriceCents / 100m).ToString("0.00"))
-                            </strong>
-
-                            <button type="button"
-                                    class="btn btn-success btn-sm add-product"
-                                    data-product-id="@product.Id"
-                                    disabled="@(!Model.HasActiveShift)">
-                                + Add
-                            </button>
-                        </div>
-                    </div>
-
-                </article>
-            }
-
-        </div>
-
-        @if (Model.Products.Count == 0)
-        {
-            <div class="alert alert-info">
-                No available products found.
-            </div>
-        }
-
-    </section>
-
-    <aside class="pos-cart" aria-labelledby="currentOrderHeading">
-
-        <div class="d-flex justify-content-between align-items-center">
-            <h4 id="currentOrderHeading" class="mb-0">Current Order</h4>
-            <button id="clearCart"
-                    type="button"
-                    class="btn btn-sm btn-outline-secondary">
-                Clear
-            </button>
-        </div>
-
-        <p class="text-muted small mt-2">
-            Review products before checkout.
-        </p>
-
-        <div id="cartItems" class="pos-cart-items" role="region" aria-label="Current order items" tabindex="0">
-            <p class="text-muted text-center">
-                Your cart is empty.
-            </p>
-        </div>
-
-        <div class="pos-cart-footer">
-            <div class="d-flex justify-content-between mb-3">
-                <strong>Total</strong>
-                <strong id="cartTotal">$0.00</strong>
-            </div>
-
-            <form method="post"
-                  asp-page-handler="Checkout"
-                  id="checkoutForm">
-
-                <input asp-for="CartJson"
-                       type="hidden"
-                       id="cartJson" />
-
-                <input type="hidden" name="ProceedToPayment" value="true" />
-                <fieldset class="mb-3">
-                    <legend class="h6">Payment method</legend>
-                    <label class="d-block mb-2"><input type="radio" name="paymentChoice" value="cash" checked /> Cash (USD)</label>
-                    <label class="d-block text-muted"><input type="radio" name="paymentChoice" value="qr" aria-describedby="qrNotice" /> Bakong QR scan</label>
-                    <small id="qrNotice" class="text-muted">Display your merchant QR at checkout. Payment stays pending until verified.</small>
-                </fieldset>
-                <button type="submit"
-                        id="checkoutButton"
-                        class="btn btn-success w-100"
-                        disabled>
-                    Create Order &amp; Checkout
-                </button>
-            </form>
-
-            <p class="text-muted small mt-2 mb-0">
-                The API calculates the final price.
-                Enter cash received on the next screen. Print a receipt after payment if the customer wants one.
-            </p>
-        </div>
-
-    </aside>
+<aside class="pos-categories" aria-labelledby="categoriesHeading"><div class="pos-section-title"><span class="pos-eyebrow">THE MENU</span><h2 id="categoriesHeading">Categories</h2></div>
+<div class="pos-category-native"><label for="categoryFilter" class="visually-hidden">Filter products by category</label><select id="categoryFilter" class="form-select"><option value="all">All items</option>@foreach (var category in Model.Categories) { <option value="@category.Id" data-pos-no-translate>@category.Name</option> }</select></div>
+<nav id="categoryButtons" class="pos-category-buttons" aria-label="Product categories" hidden>
+<button type="button" class="pos-category-button is-active" data-category-filter="all" data-category-name="All items" aria-pressed="true"><span class="pos-category-symbol" aria-hidden="true">&#9638;</span><span class="pos-category-label">All items</span><small>@Model.Products.Count</small></button>
+@foreach (var category in Model.Categories) {
+<button type="button" class="pos-category-button" data-category-filter="@category.Id" data-category-name="@category.Name" aria-pressed="false"><span class="pos-category-symbol" aria-hidden="true">@(string.IsNullOrWhiteSpace(category.Name) ? "-" : category.Name.Trim()[..1].ToUpperInvariant())</span><span class="pos-category-label" data-pos-no-translate>@category.Name</span><small>@categoryCounts.GetValueOrDefault(category.Id)</small></button>
+}
+</nav><p class="pos-category-help">Made to order,<br />served with a little care.</p></aside>
+<section class="pos-products" aria-labelledby="catalogHeading">
+<div class="pos-toolbar"><div class="pos-search-wrap"><span aria-hidden="true" class="pos-search-symbol">&#9906;</span><label for="productSearch" class="visually-hidden">Search menu by product or description</label><input id="productSearch" type="search" class="form-control" placeholder="Search coffee, tea, or a favorite..." autocomplete="off" /><button id="clearSearch" type="button" aria-label="Clear product search" hidden>&#215;</button></div><div class="pos-catalog-heading"><h2 id="catalogHeading" data-pos-no-translate>All items</h2><span id="productResultCount" role="status" aria-live="polite">@Model.Products.Count available</span></div></div>
+<div class="pos-product-grid" id="productGrid">
+@foreach (var product in Model.Products) {
+<article class="pos-product-card" data-product-id="@product.Id" data-category-id="@product.CategoryId" data-search="@((product.Name + " " + product.Description).ToLowerInvariant())">
+<div class="pos-product-icon">@if (!string.IsNullOrEmpty(product.ImageUrl)) { <img src="@product.ImageUrl" class="pos-product-image" alt="" loading="lazy" referrerpolicy="no-referrer" data-pos-image /> }<span class="pos-image-fallback" hidden="@(!string.IsNullOrEmpty(product.ImageUrl))" aria-hidden="true"><partial name="/Pages/Shared/_CafeMark.cshtml" /></span><span class="pos-card-quantity" data-product-cart-count hidden></span></div>
+<div class="pos-product-info"><span class="pos-product-category" data-pos-no-translate>@categoryNames.GetValueOrDefault(product.CategoryId,"Menu item")</span><h3 data-pos-no-translate>@product.Name</h3><p data-pos-no-translate>@product.Description</p><div class="pos-product-bottom"><strong>$@((product.PriceCents / 100m).ToString("0.00",CultureInfo.InvariantCulture))</strong><button type="button" class="btn btn-primary add-product" data-product-id="@product.Id" disabled="@(!Model.HasActiveShift)" aria-label="Add @product.Name to order"><span aria-hidden="true">+</span> Add</button></div></div>
+</article>
+}
 </div>
-
+<div id="noProductMatches" class="pos-menu-empty" hidden><span aria-hidden="true"><partial name="/Pages/Shared/_CafeMark.cshtml" /></span><h3>No matching favorites</h3><p>Try another search or browse all items. Your cart will stay here.</p><button type="button" id="resetProductFilters" class="btn btn-outline-primary">Show all items</button></div>
+@if (Model.Products.Count == 0 && Model.ErrorMessage is null) { <div class="pos-menu-empty"><span aria-hidden="true"><partial name="/Pages/Shared/_CafeMark.cshtml" /></span><h3>The menu is empty</h3><p>No available products found. Ask an Admin to check product availability.</p></div> }
+<p id="posFeedback" class="visually-hidden" role="status" aria-live="polite"></p></section>
+<div id="posCartHost" class="pos-cart-host"><aside class="pos-cart" id="posCart" aria-labelledby="currentOrderHeading">
+<header class="pos-cart-header"><div><p class="pos-eyebrow">REVIEW BEFORE CHECKOUT</p><h2 id="currentOrderHeading">Current order <span id="cartItemCount">0</span></h2></div><button type="button" id="closeCart" class="pos-close-cart" aria-label="Close cart">&#215;</button></header>
+<div class="pos-cart-subheading"><span id="cartLineSummary">Start with something lovely.</span><button id="clearCart" type="button" disabled>Clear cart</button></div>
+<div id="cartItems" class="pos-cart-items" role="region" aria-label="Current order items" tabindex="0"><div class="pos-cart-empty"><span aria-hidden="true"><partial name="/Pages/Shared/_CafeMark.cshtml" /></span><h3>A little empty here</h3><p>Tap Add on a menu item to start your order.</p></div></div>
+<div class="pos-cart-footer"><div class="pos-total-row"><div><strong>Order estimate</strong><small>USD &#183; final total confirmed at checkout</small></div><strong id="cartTotal">$0.00</strong></div>
+<form method="post" asp-page-handler="Checkout" id="checkoutForm"><input asp-for="CartJson" type="hidden" id="cartJson" /><input type="hidden" name="ProceedToPayment" value="true" />
+<fieldset class="pos-payment-options"><legend>How will they pay?</legend><div class="pos-payment-grid">
+<label class="pos-payment-option"><input type="radio" name="paymentChoice" value="cash" checked="@(Model.PaymentChoice != "qr")" /><span><strong>Cash</strong><small>USD payment</small></span></label>
+<label class="pos-payment-option"><input type="radio" name="paymentChoice" value="qr" checked="@(Model.PaymentChoice == "qr")" aria-describedby="qrNotice" /><span><strong>Saved QR</strong><small>Display only</small></span></label>
+</div></fieldset><p id="qrNotice" class="pos-payment-note" hidden="@(Model.PaymentChoice != "qr")">Payment stays pending until verified. Saved QR display does not confirm payment.</p><p id="cashPaymentHint" class="pos-payment-note" hidden="@(Model.PaymentChoice == "qr")">Enter cash received on the next screen.</p>
+<button type="submit" id="checkoutButton" class="btn btn-primary w-100" disabled>Continue to payment <span aria-hidden="true">&#8594;</span></button></form><p class="pos-receipt-hint">Optional receipt after a confirmed cash payment.</p>
+</div></aside></div>
+</div>
+<div class="pos-mobile-bar"><div><strong id="mobileCartTotal">$0.00</strong><small id="mobileCartCount">Your cart is empty</small></div><button type="button" id="openCart" class="btn btn-primary" aria-haspopup="dialog" aria-controls="posCartDialog">View cart <span aria-hidden="true">&#8594;</span></button></div>
+<dialog id="posCartDialog" class="pos-cart-dialog" aria-labelledby="currentOrderHeading"></dialog>
+</div>
 @section Scripts {
-    <script>
-        window.auraPos = {
-            products: @Html.Raw(productsJson),
-            hasActiveShift: @Json.Serialize(Model.HasActiveShift)
-        };
-    </script>
-
-    <script src="~/js/pos.js"
-            asp-append-version="true"></script>
+<script>window.auraPos = { products: @Html.Raw(productsJson), hasActiveShift: @Json.Serialize(Model.HasActiveShift) };</script>
+<script src="~/js/pos-language.js" asp-append-version="true"></script>
+<script src="~/js/pos.js" asp-append-version="true"></script>
 }

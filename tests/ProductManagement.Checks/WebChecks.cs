@@ -75,7 +75,13 @@ internal static class WebChecks
                 check(response.StatusCode == HttpStatusCode.Redirect, role + " can log in through Web → API");
             }
             await Login("Admin");
+            var dialogAsset = await browser.GetStringAsync("/js/dialogs.js");
+            var dialogStyles = await browser.GetStringAsync("/css/dialogs.css");
+            check(dialogAsset.Contains("form.requestSubmit(submitter || undefined)") && dialogAsset.Contains("event.stopImmediatePropagation()"), "Shared confirmation preserves original form submission after approval");
+            check(dialogAsset.Contains("previousFocus?.focus()") && dialogAsset.Contains("message.textContent"), "Shared dialog restores focus and renders messages as text");
+            check(dialogStyles.Contains("var(--aura-primary)") && dialogStyles.Contains("::backdrop"), "Portal dialog stylesheet inherits Admin and Cashier themes");
             var staffDirectory = await browser.GetStringAsync("/Admin/Staff");
+            check(Regex.Matches(staffDirectory, "id=\"auraActionDialog\"").Count == 1 && staffDirectory.Contains("/js/dialogs"), "Admin layout includes one reusable accessible confirmation dialog");
             check(staffDirectory.Contains("admin-theme") && staffDirectory.Contains("Your team") && staffDirectory.Contains("Linked accounts"), "Green Admin theme and real staff directory render");
             check((await browser.GetAsync("/css/design-system.css")).IsSuccessStatusCode && (await browser.GetAsync("/css/staff.css")).IsSuccessStatusCode,
                 "Admin design system and staff stylesheet are served");
@@ -197,12 +203,39 @@ internal static class WebChecks
             var reportPage = await browser.GetStringAsync("/Admin/Reports?From=2026-11-14&To=2026-11-14");
             var expectedRevenue = "USD " + (((long)int.MaxValue + 201 + 325 + 3) / 100m).ToString("N2", System.Globalization.CultureInfo.GetCultureInfo("en-US"));
             check(reportPage.Contains(expectedRevenue) && reportPage.Contains("Sales by collecting cashier"), "Lesson12 Razor report displays real aggregate and cashier breakdown");
+            check(reportPage.Contains("Last 7 days") && reportPage.Contains("Export CSV") && reportPage.Contains("printSalesReport"), "Sales report exposes date presets, export and print controls");
+            check(reportPage.Contains("Boundary months cover only dates inside") && reportPage.Contains("Bakong test confirmations are excluded"), "Sales report explains partial months and cash-only revenue");
+            var exportedSales = await browser.GetAsync("/Admin/Reports?handler=Export&From=2026-11-14&To=2026-11-14");
+            var salesCsv = await exportedSales.Content.ReadAsStringAsync();
+            check(exportedSales.IsSuccessStatusCode && exportedSales.Content.Headers.ContentType?.MediaType == "text/csv"
+                && exportedSales.Content.Headers.ContentDisposition!.ToString().Contains("aura-sales-2026-11-14-to-2026-11-14.csv"), "Sales CSV downloads with selected date range and content type");
+            check(salesCsv.Contains(expectedRevenue.Replace("USD ", "").Replace(",", "")) && salesCsv.Contains("ProductTop20") && salesCsv.Contains("Summary"), "Sales CSV uses actual report totals and clearly typed breakdown rows");
+            check(salesCsv.Contains("\"'=1+1,\"\"Cafe\"\"\nTeam (#"), "Sales CSV quotes commas/newlines/quotes and neutralizes spreadsheet formula names");
+            check(exportedSales.Headers.CacheControl?.NoStore == true, "Sales CSV is not cached as public financial data");
+            check((await browser.GetAsync("/Admin/Reports?handler=Export&From=2026-11-15&To=2026-11-14")).StatusCode == HttpStatusCode.BadRequest, "Sales CSV rejects invalid date ranges");
+            var emptySales = await browser.GetStringAsync("/Admin/Reports?From=1900-01-01&To=1900-01-02");
+            check(emptySales.Contains("No completed payments in this period") && emptySales.Contains("No cashier sales yet"), "Sales report empty period retains clear honest empty states");
+            var badSales = await browser.GetStringAsync("/Admin/Reports?From=2026-11-16&To=2026-11-15");
+            check(badSales.Contains("Choose a valid date range") && !badSales.Contains("report-kpis"), "Invalid report dates do not display invented metrics");
             var dashboard = await browser.GetStringAsync("/Admin/Dashboard");
             check(Regex.Matches(dashboard, "class=\"dash-chart-column\"").Count == 7 && dashboard.Contains("View daily sales figures"), "Admin dashboard renders seven real daily revenue columns and accessible figures");
             check(!dashboard.Contains("seven-day sales view is unavailable") && dashboard.Contains("Opening floats and unpaid orders are excluded"), "Admin dashboard weekly reporting loads with correct revenue guidance");
             check(dashboard.Contains("Today's revenue") && dashboard.Contains("Pending orders now") && !dashboard.Contains("Not connected"), "Lesson12 dashboard loads database-backed metrics");
+            var shiftDirectory = await browser.GetStringAsync("/Admin/Shifts");
+            check(shiftDirectory.Contains("Summary cards cover the loaded recent records") && shiftDirectory.Contains("Opening drawer"), "Shift directory labels recent-record scope and separate opening currencies");
+            check(Regex.Matches(shiftDirectory, "aria-label=\"View drawer for ").Count is > 0 and <= 12, "Shift directory pages real records to twelve rows");
+            var openShifts = await browser.GetStringAsync("/Admin/Shifts?Status=Open&Search=TEST-1");
+            check(openShifts.Contains("shift-status is-open") && !openShifts.Contains("shift-status is-closed"), "Shift status and staff-code search combine on real recent records");
+            var closedShifts = await browser.GetStringAsync("/Admin/Shifts?Status=Closed");
+            check(closedShifts.Contains("shift-status is-closed") && !closedShifts.Contains("shift-status is-open"), "Closed shift filter excludes working shifts");
+            check((await browser.GetStringAsync("/Admin/Shifts?Search=unmatched-shift-xyz")).Contains("No matching shifts"), "Shift search shows useful empty state");
+            check((await browser.GetStringAsync("/Admin/Shifts?From=1900-01-01&To=1900-01-02")).Contains("No matching shifts"), "Shift local clock-in date filters exclude other days");
+            check((await browser.GetStringAsync("/Admin/Shifts?From=2026-11-16&To=2026-11-15")).Contains("From must be on or before To"), "Shift invalid date range rejected clearly");
+            check((await browser.GetStringAsync("/Admin/Shifts?PageNumber=0")).Contains("Check the search"), "Shift invalid pagination rejected");
             var adminCash = await browser.GetAsync($"/Admin/Shifts/Reconciliation/{productId}");
             check(adminCash.IsSuccessStatusCode, "Lesson12 Admin can view read-only drawer summary");
+            var drawerMarkup = await adminCash.Content.ReadAsStringAsync();
+            check(drawerMarkup.Contains("US dollars") && drawerMarkup.Contains("Khmer riel") && drawerMarkup.Contains("Read-only review"), "Admin drawer review separates USD/KHR and retains read-only behavior");
             foreach (var route in new[] { "/Admin/Staff", "/Admin/Shifts", "/Admin/Payments" })
             {
                 var response = await browser.GetAsync(route);
@@ -307,6 +340,7 @@ internal static class WebChecks
             check(logout.StatusCode == HttpStatusCode.Redirect, "Admin logout works");
             await Login("Cashier");
             var cashierHome = await browser.GetStringAsync("/Cashier/Dashboard");
+            check(Regex.Matches(cashierHome, "id=\"auraActionDialog\"").Count == 1 && cashierHome.Contains("aria-describedby=\"auraDialogMessage\""), "Cashier layout includes shared labelled confirmation dialog");
             check(cashierHome.Contains("portal-body cashier-theme") && cashierHome.Contains("Cashier corner") && cashierHome.Contains("Open POS"), "Pink Cashier portal renders friendly dashboard with real workflow links");
             check(cashierHome.Contains("Your recent orders") && cashierHome.Contains("Ready for the day?") && !cashierHome.Contains("could not be loaded") && !cashierHome.Contains("status is unavailable"), "Cashier dashboard loads ownership-protected recent orders and current shift");
             foreach (var staffRoute in new[] { "/Admin/Staff", "/Admin/Staff/Create", "/Admin/Staff/Edit/" + employeeId })
@@ -322,6 +356,17 @@ internal static class WebChecks
             check((await browser.GetAsync("/Admin/Settings/PaymentQr")).Headers.Location!.ToString().Contains("/Account/Denied"), "Cashier cannot change saved merchant QR");
             var posWithImage = await browser.GetStringAsync("/Cashier/POS");
             check(posWithImage.Contains(imageUrl) && posWithImage.Contains("data-pos-image"), "Cashier POS renders uploaded product image instead of icon only");
+            check(posWithImage.Contains("id=\"posLanguage\"") && posWithImage.Contains("value=\"km\" lang=\"km\""), "POS renders accessible English/Khmer language selector");
+            var posLanguageScript = await browser.GetStringAsync("/js/pos-language.js");
+            check(posLanguageScript.Contains("\u1785\u17c6\u178e\u17bb\u1785\u179b\u1780\u17cb") && posLanguageScript.Contains("aura.posLanguage"), "POS serves UTF-8 Khmer translations and browser language preference support");
+            check(posLanguageScript.Contains("data-pos-no-translate") && posWithImage.Contains("data-pos-no-translate>Uploaded POS Coffee"), "POS preserves database product names instead of translating catalog data");
+            check(posLanguageScript.Contains("aura:pos-language-changed") && posLanguageScript.Contains("document.documentElement.lang"), "POS language changes expose accessible language metadata and cart refresh event");
+
+            check(posWithImage.Contains("data-category-filter=\"all\"") && posWithImage.Contains("data-category-filter=\"" + categoryId + "\"") && posWithImage.Contains("aria-pressed=\"true\""), "POS category navigation uses actual API categories with accessible active state");
+            check(Regex.Matches(posWithImage,"id=\"checkoutForm\"").Count == 1 && posWithImage.Contains("id=\"posCartDialog\"") && posWithImage.Contains("aria-controls=\"posCartDialog\""), "Responsive POS uses a single order form and accessible mobile cart dialog");
+            check(posWithImage.Contains("Order estimate") && posWithImage.Contains("final total confirmed at checkout") && posWithImage.Contains("Saved QR") && posWithImage.Contains("Display only"), "POS clearly distinguishes order estimate, cash checkout and display-only QR");
+            check(posWithImage.Contains("id=\"noProductMatches\"") && posWithImage.Contains("data-product-cart-count"), "POS includes filter empty state and in-cart product indicators");
+
             check(posWithImage.Contains("name=\"ProceedToPayment\" value=\"true\"") && posWithImage.Contains("Payment stays pending until verified."), "POS checkout continues to payment and describes QR as pending until verified");
             var qrCheckoutScript = await browser.GetStringAsync("/js/checkout.js");
             check(qrCheckoutScript.Contains("selectMethod(true)") && !qrCheckoutScript.Contains("createObjectURL") && qrCheckoutScript.Contains("dialog.showModal()"), "QR checkout automatically displays saved image without cashier file selection");
@@ -333,6 +378,7 @@ internal static class WebChecks
                 check(deniedInventory.StatusCode == HttpStatusCode.Redirect && deniedInventory.Headers.Location!.ToString().Contains("/Account/Denied"), "Inventory Cashier page denied: " + inventoryRoute);
             }
             check((await browser.GetAsync("/Admin/Reports")).StatusCode == HttpStatusCode.Redirect, "Lesson12 Cashier denied Admin report page");
+            check((await browser.GetAsync("/Admin/Reports?handler=Export&From=2026-11-14&To=2026-11-14")).Headers.Location!.ToString().Contains("/Account/Denied"), "Cashier denied sales CSV export");
             foreach (var route in new[] { "/Cashier/POS", "/Cashier/MyShift", "/Cashier/Orders", $"/Cashier/Payments/Create/{productId}" })
             {
                 var response = await browser.GetAsync(route);
@@ -406,6 +452,14 @@ internal static class WebChecks
             var blankRiel = Regex.Match(separateCounts, "<input[^>]*name=\"OpeningRiel\"[^>]*>").Value;
             check(blankUsd.Contains("value=\"\"") && blankRiel.Contains("value=\"\"") && !blankUsd.Contains("placeholder=") && !blankRiel.Contains("placeholder="),
                 "USD and KHR opening inputs both start blank without default examples");
+            var offShiftPos = await browser.GetStringAsync("/Cashier/POS");
+            check(offShiftPos.Contains("Clock in required") && offShiftPos.Contains("Let's open your shift first."), "POS explains closed shift requirement instead of allowing checkout");
+            var invalidPos = await browser.PostAsync("/Cashier/POS?handler=Checkout", new FormUrlEncodedContent(new Dictionary<string,string>
+            {
+                ["__RequestVerificationToken"] = Token(offShiftPos), ["CartJson"] = "[{\"productId\":" + uploadedProductId + ",\"quantity\":0}]", ["ProceedToPayment"] = "true"
+            }));
+            check(invalidPos.StatusCode == HttpStatusCode.OK && (await invalidPos.Content.ReadAsStringAsync()).Contains("Cart contains invalid products or quantities"), "Redesigned POS retains server-side cart validation");
+
         }
         finally
         {

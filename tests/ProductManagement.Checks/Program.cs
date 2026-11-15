@@ -182,7 +182,24 @@ try
         var afterSales = await db.Ingredients.ToDictionaryAsync(i => i.Id, i => i.QuantityOnHand);
         Check(inventoryBalances.All(pair => afterSales[pair.Key] == pair.Value), "Inventory sales/payments do not automatically deduct stock in Lesson13");
     }
-    await WebChecks.RunAsync(app.Urls.Single(), categoryId, historicalId, Check);
+    string originalCashierName;
+    using (var scope = app.Services.CreateScope())
+    {
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var exportCashier = await db.StaffMembers.SingleAsync(s => s.Email == "Cashier@test.invalid");
+        originalCashierName = exportCashier.FullName;
+        exportCashier.FullName = "=1+1,\"Cafe\"\nTeam"; // Disposable fixture for spreadsheet escaping; never touches working data.
+        await db.SaveChangesAsync();
+    }
+    try { await WebChecks.RunAsync(app.Urls.Single(), categoryId, historicalId, Check); }
+    finally
+    {
+        using var scope = app.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var exportCashier = await db.StaffMembers.SingleAsync(s => s.Email == "Cashier@test.invalid");
+        exportCashier.FullName = originalCashierName;
+        await db.SaveChangesAsync();
+    }
     await BakongSandboxChecks.RunAsync(app.Services, app.Urls.Single(), adminToken, cashierToken, Check);
     Console.WriteLine($"Completed: {passed} checks passed. Working database was not used.");
 }

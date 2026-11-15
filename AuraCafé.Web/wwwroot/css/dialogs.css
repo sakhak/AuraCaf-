@@ -1,0 +1,20 @@
+/* Dialogs inherit the green Admin or pink Cashier portal tokens. */
+.aura-action-dialog { color: var(--aura-text); background: var(--aura-surface); border: 1px solid var(--aura-border); border-radius: 24px; padding: 0; width: min(440px,calc(100vw - 32px)); max-height: calc(100dvh - 32px); overflow: auto; margin: auto; box-shadow: 0 24px 90px rgb(20 35 27 / 24%); }
+.aura-action-dialog::backdrop { background: rgb(20 25 23 / 48%); backdrop-filter: blur(4px); }
+.aura-dialog-body { padding: 28px; }
+.aura-dialog-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; gap: 16px; }
+.aura-dialog-icon { display: block; width: 62px; height: 62px; border-radius: 20px; padding: 9px; background: var(--aura-cream); color: var(--aura-primary); }
+.aura-dialog-dismiss { display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid var(--aura-border); border-radius: 50%; background: var(--aura-surface); color: var(--aura-muted); font-size: 1.5rem; line-height: 1; }
+.aura-dialog-dismiss:hover { color: var(--aura-text); background: var(--aura-background); }
+.aura-dialog-eyebrow { color: var(--aura-primary); font-size: .625rem; font-weight: 700; letter-spacing: .16em; margin: 0 0 8px; }
+.aura-action-dialog h2 { font-size: 1.5rem; font-weight: 700; letter-spacing: -.035em; margin: 0 0 12px; }
+#auraDialogMessage { font-size: .9375rem; line-height: 1.7; color: var(--aura-muted); margin: 0 0 26px; white-space: pre-line; overflow-wrap: anywhere; }
+.aura-dialog-actions { display: flex; justify-content: flex-end; gap: 12px; border-top: 1px solid var(--aura-border); padding-top: 20px; }
+.aura-dialog-actions .btn { flex: 1; min-height: 46px; border-radius: 12px; font-size: .875rem; font-weight: 600; }
+.aura-dialog-actions .btn[hidden] { display: none; }
+.aura-action-dialog[data-tone="danger"] .aura-dialog-icon { color: #a22640; background: #fff0f2; }
+.aura-action-dialog[data-tone="danger"] #auraDialogConfirm { color: white; background: #a22640; border-color: #a22640; }
+.aura-action-dialog[data-tone="danger"] #auraDialogConfirm:hover { background: #841c32; border-color: #841c32; }
+.cashier-theme .aura-action-dialog { border-radius: 28px; }
+.cashier-theme .aura-dialog-icon { border-radius: 22px; }
+@media (max-width: 479.98px) { .aura-dialog-body { padding: 22px; } .aura-action-dialog h2 { font-size: 1.375rem; } .aura-dialog-actions { gap: 10px; } }

@@ -1,133 +1,55 @@
 @page
 @model AuraCafé.Web.Areas.Admin.Pages.Shifts.IndexModel
-
-@{
-    ViewData["Title"] = "Shift Management";
-
-    var cafeZone = TimeZoneInfo.FindSystemTimeZoneById(
-        "Asia/Phnom_Penh");
-
-    string DisplayTime(DateTime utc) =>
-        TimeZoneInfo.ConvertTimeFromUtc(
-            DateTime.SpecifyKind(utc, DateTimeKind.Utc),
-            cafeZone).ToString("dd MMM yyyy, hh:mm tt");
-}
-
-<div class="mb-4">
-    <h2 class="fw-bold">Shift Management</h2>
-    <p class="portal-muted">
-        Monitor employee attendance and working hours.
-    </p>
-</div>
-
-@if (!string.IsNullOrEmpty(Model.ErrorMessage))
-{
-    <div class="alert alert-danger">
-        @Model.ErrorMessage
-    </div>
-}
-else
-{
-    <div class="row g-3 mb-4">
-
-        <div class="col-md-4">
-            <div class="portal-card">
-                <p class="portal-muted">Open Shifts</p>
-                <h3>@Model.ActiveCount</h3>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            <div class="portal-card">
-                <p class="portal-muted">Completed Shifts</p>
-                <h3>@Model.CompletedCount</h3>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            <div class="portal-card">
-                <p class="portal-muted">
-                    Total Completed Hours
-                </p>
-                <h3>@Model.TotalHours.ToString("0.00")</h3>
-            </div>
-        </div>
-
-    </div>
-
-    <div class="portal-card">
-        <h4 class="mb-3">Recent Employee Shifts</h4>
-
-        <div class="table-responsive">
-            <table class="table table-hover align-middle">
-                <thead>
-                    <tr>
-                        <th>Employee</th>
-                        <th>Clock In</th>
-                        <th>Clock Out</th>
-                        <th>Status</th>
-                        <th>Hours</th><th>Cash</th>
-                    </tr>
-                </thead>
-
-                <tbody>
-                    @foreach (var shift in Model.Shifts)
-                    {
-                        <tr>
-                            <td>
-                                <strong>@shift.StaffName</strong>
-                                <div class="small text-muted">
-                                    @shift.StaffCode
-                                </div>
-                            </td>
-
-                            <td>
-                                @DisplayTime(shift.ClockInUtc)
-                            </td>
-
-                            <td>
-                                @(shift.ClockOutUtc.HasValue
-                                                        ? DisplayTime(
-                                                        shift.ClockOutUtc.Value)
-                                                        : "Still working")
-                    </td>
-
-                            <td>
-                        @if (shift.Status == "Open")
-                                {
-                                    <span class="badge bg-success">
-                                        Working
-                                    </span>
-                                }
-                                else
-                                {
-                                    <span class="badge bg-secondary">
-                                        Completed
-                                    </span>
-                                }
-                        </td>
-
-                        <td>
-                            @(shift.HoursWorked.HasValue
-                                                    ? shift.HoursWorked.Value.ToString("0.00")
-                                                    : "—")
-                    </td>
-                <td><a asp-page="./Reconciliation" asp-route-id="@shift.Id">View drawer</a></td></tr>
-                                }
-                </tbody>
-            </table>
-        </div>
-
-        @if (Model.Shifts.Count == 0)
+@using AuraCafé.Web.Models
+@using System.Globalization
+@{ ViewData["Title"] = "Shift Management"; }
+<link rel="stylesheet" href="~/css/shift-management.css" asp-append-version="true" />
+<div class="shift-workspace">
+    <header class="shift-heading"><div><p class="shift-eyebrow">TEAM &amp; DRAWER OVERVIEW</p><h1>Shift Management</h1><p class="text-muted mb-0">See who's on duty, review working hours, and follow every drawer count.</p></div><a asp-page="./Index" class="btn btn-outline-primary">Refresh shifts <span aria-hidden="true">&#8635;</span></a></header>
+    @if (Model.ErrorMessage is not null) { <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div> }
+    else
+    {
+        <section class="shift-metrics" aria-label="Summary of loaded recent shifts">
+            <article class="shift-metric"><span class="shift-metric-icon" aria-hidden="true">&#9687;</span><div><h2>Open shifts</h2><strong>@Model.ActiveCount</strong><p>Currently on duty</p></div></article>
+            <article class="shift-metric"><span class="shift-metric-icon" aria-hidden="true">&#10003;</span><div><h2>Closed shifts</h2><strong>@Model.CompletedCount</strong><p>Finished in recent records</p></div></article>
+            <article class="shift-metric"><span class="shift-metric-icon" aria-hidden="true">&#9719;</span><div><h2>Completed hours</h2><strong>@Model.TotalHours.ToString("N2")<small> hrs</small></strong><p>Closed shifts only</p></div></article>
+            <article class="shift-metric"><span class="shift-metric-icon" aria-hidden="true">&#9776;</span><div><h2>Recent records</h2><strong>@Model.LoadedCount</strong><p>Up to 200 returned by API</p></div></article>
+        </section>
+        <div class="shift-scope"><span aria-hidden="true">&#9432;</span><span>Summary cards cover the loaded recent records before filters, not all-time totals. Dates use clock-in time in Asia/Bangkok (UTC+07:00).</span></div>
+    }
+    <section class="shift-panel" aria-labelledby="shiftListHeading">
+        <div class="shift-panel-heading"><div><h2 id="shiftListHeading">Employee shifts</h2><p>Open shifts first, followed by the latest clock-in.</p></div>@if (Model.ErrorMessage is null) { <span class="shift-count">@Model.MatchingCount matching</span> }</div>
+        <form method="get" class="shift-filters">
+            <div class="shift-search"><label asp-for="Search">Find a shift</label><input asp-for="Search" type="search" class="form-control" maxlength="150" placeholder="Name, staff code or shift number" /></div>
+            <div><label asp-for="Status">Status</label><select asp-for="Status" class="form-select"><option value="">All shifts</option><option value="Open">Open / working</option><option value="Closed">Closed</option></select></div>
+            <div><label asp-for="From">Clock-in from</label><input asp-for="From" type="date" class="form-control" /></div>
+            <div><label asp-for="To">Clock-in to</label><input asp-for="To" type="date" class="form-control" /></div>
+            <div class="shift-filter-actions"><button class="btn btn-primary" type="submit">Apply</button><a asp-page="./Index" class="btn btn-outline-secondary">Clear</a></div>
+        </form>
+        @if (Model.ErrorMessage is null)
         {
-            <p class="text-muted">
-                No shift records found.
-            </p>
+            @if (Model.Shifts.Count == 0)
+            {
+                <div class="shift-empty"><span aria-hidden="true">&#9687;</span><h3>@(Model.LoadedCount == 0 ? "No shifts yet" : "No matching shifts")</h3><p>@(Model.LoadedCount == 0 ? "Shift records appear when a cashier clocks in." : "Try another name, status or date range within the recent records.")</p><a asp-page="./Index" class="btn btn-outline-primary">View recent shifts</a></div>
+            }
+            else
+            {
+                <div class="table-responsive shift-table-wrap" tabindex="0" role="region" aria-label="Employee shift records, scroll horizontally for all columns"><table class="table shift-table align-middle"><caption class="visually-hidden">Recent shifts with staff, local clock times, duration and recorded opening floats.</caption><thead><tr><th scope="col">Employee</th><th scope="col">Clock in</th><th scope="col">Clock out</th><th scope="col">Status</th><th scope="col">Hours</th><th scope="col">Opening drawer</th><th scope="col">Details</th></tr></thead><tbody>
+                @foreach (var shift in Model.Shifts)
+                {
+                    var open = shift.ClockOutUtc is null;
+                    var initial = string.IsNullOrWhiteSpace(shift.StaffName) ? "?" : shift.StaffName.Trim()[..1].ToUpperInvariant();
+                    <tr><th scope="row"><div class="shift-person"><span class="shift-avatar" aria-hidden="true">@initial</span><div><strong>@shift.StaffName</strong><small>@shift.StaffCode <span aria-hidden="true">&#183;</span> Shift #@shift.Id</small></div></div></th>
+                    <td><span class="shift-time">@ReportDisplay.Local(shift.ClockInUtc)</span></td><td>@if (shift.ClockOutUtc is { } end) { <span class="shift-time">@ReportDisplay.Local(end)</span> } else { <span class="text-muted">Still working</span> }</td>
+                    <td><span class="shift-status @(open ? "is-open" : "is-closed")"><span aria-hidden="true"></span>@(open ? "Open" : "Closed")</span></td>
+                    <td><span class="shift-duration">@(open ? "In progress" : shift.HoursWorked.HasValue ? shift.HoursWorked.Value.ToString("0.00") + " hrs" : "Not recorded")</span></td>
+                    <td><div class="shift-opening"><span>@(shift.OpeningCashCents.HasValue ? ReportDisplay.Money(shift.OpeningCashCents.Value) : "USD not recorded")</span><small>@(shift.OpeningCashRiel.HasValue ? ReportDisplay.Riel(shift.OpeningCashRiel.Value) : "KHR not recorded")</small></div></td>
+                    <td><a asp-page="./Reconciliation" asp-route-id="@shift.Id" class="btn btn-outline-primary btn-sm" aria-label="View drawer for @shift.StaffName shift @shift.Id">View drawer <span aria-hidden="true">&#8599;</span></a></td></tr>
+                }
+                </tbody></table></div>
+                <footer class="shift-pagination"><p>Showing @((Model.PageNumber - 1) * 12 + 1)&#8211;@Math.Min(Model.PageNumber * 12, Model.MatchingCount) of @Model.MatchingCount matches</p><nav aria-label="Shift pages"><span>Page @Model.PageNumber of @Model.TotalPages</span>@if (Model.PageNumber > 1) { <a asp-route-Search="@Model.Search" asp-route-Status="@Model.Status" asp-route-From="@(Model.From?.ToString("yyyy-MM-dd"))" asp-route-To="@(Model.To?.ToString("yyyy-MM-dd"))" asp-route-PageNumber="@(Model.PageNumber - 1)" class="btn btn-outline-secondary btn-sm" rel="prev">Previous</a> }@if (Model.PageNumber < Model.TotalPages) { <a asp-route-Search="@Model.Search" asp-route-Status="@Model.Status" asp-route-From="@(Model.From?.ToString("yyyy-MM-dd"))" asp-route-To="@(Model.To?.ToString("yyyy-MM-dd"))" asp-route-PageNumber="@(Model.PageNumber + 1)" class="btn btn-outline-primary btn-sm" rel="next">Next</a> }</nav></footer>
+            }
         }
-
-        <p class="small text-muted mt-3">
-            Showing up to 200 recent shifts.
-            Totals are based on the displayed records.
-        </p>
-    </div>
-}
+    </section>
+    <div class="shift-help"><strong>A clear drawer, a clear close.</strong><p>Open a shift's drawer view for cash sales, expected closing amounts and submitted differences. Admin monitoring is read-only; cashiers close their own shifts.</p></div>
+</div>

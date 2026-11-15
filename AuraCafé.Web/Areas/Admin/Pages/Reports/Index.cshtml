@@ -1,65 +1,66 @@
 @page
 @model AuraCafé.Web.Areas.Admin.Pages.Reports.IndexModel
 @using AuraCafé.Web.Models
-@{ ViewData["Title"] = "Sales Reports"; }
-<link rel="stylesheet" href="~/css/reports.css" asp-append-version="true" />
-<header class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
-    <div><h1>Sales Overview</h1><p class="text-muted mb-0">Confirmed cash sales · USD · Asia/Bangkok (UTC+07:00)</p></div>
-    <a asp-area="Admin" asp-page="/Dashboard/Index" class="btn btn-outline-primary">Dashboard</a>
-</header>
-<form method="get" class="portal-card mb-4" id="salesReportFilter">
-    <div class="d-flex flex-wrap align-items-end gap-3">
-        <div><label asp-for="From" class="form-label">From</label><input asp-for="From" type="date" class="form-control" /></div>
-        <div><label asp-for="To" class="form-label">To (inclusive)</label><input asp-for="To" type="date" class="form-control" /></div>
-        <button type="submit" class="btn btn-primary">Apply dates</button>
-    </div>
-    <p class="text-muted small mb-0 mt-2">Maximum 366 days. Sales are dated by payment confirmation, not order creation.</p>
-</form>
-@if (Model.ErrorMessage is not null) { <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div> }
-@if (Model.Report is { } report)
-{
-    <div class="report-kpis mb-4">
-        @foreach (var metric in new[] { ("Revenue", ReportDisplay.Money(report.RevenueCents)), ("Paid orders", report.PaidOrders.ToString()), ("Cash received", ReportDisplay.Money(report.CashReceivedCents)), ("Change given", ReportDisplay.Money(report.ChangeCents)) })
-        {
-            <article class="portal-card"><h2 class="h6">@metric.Item1</h2><p class="report-value mb-0">@metric.Item2</p></article>
-        }
-    </div>
-    <p class="text-muted">Net cash retained: <strong>@ReportDisplay.Money(report.NetCashCents)</strong>. Opening float is excluded from sales. Generated @ReportDisplay.Local(report.GeneratedAtUtc).</p>
-    @if (report.PaidOrders == 0) { <div class="alert alert-info" role="status">No completed payments in this period.</div> }
-    <section class="portal-card mb-4" aria-labelledby="dailyHeading">
-        <h2 id="dailyHeading" class="h4">Daily revenue</h2>
-        <p class="text-muted small">Only dates with completed sales are shown. Bar length is relative to this period's highest daily revenue.</p>
-        @if (report.Daily.Count > 0)
-        {
-            var max = Math.Max(1, report.Daily.Max(d => d.RevenueCents));
-            <div class="report-chart" role="list" aria-label="Daily sales chart" tabindex="0">
-                @foreach (var day in report.Daily)
-                {
-                    var width = (day.RevenueCents * 100m / max).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
-                    <div class="report-bar-row" role="listitem"><span>@day.Date.ToString("dd MMM yyyy")</span><div class="report-bar-track" aria-hidden="true"><div class="report-bar" style="width: @(width)%"></div></div><strong>@ReportDisplay.Money(day.RevenueCents)</strong><span class="small">@day.PaidOrders paid orders</span></div>
-                }
-            </div>
-        }
-        else { <p class="text-muted">No sales to chart.</p> }
-    </section>
-    <section class="portal-card mb-4">
-        <h2 class="h4">Monthly revenue</h2><p class="text-muted small">First/last month totals cover only the selected dates.</p>
-        <div class="table-responsive" tabindex="0" role="region" aria-label="Monthly revenue">
-            <table class="table"><thead><tr><th scope="col">Month</th><th scope="col">Paid orders</th><th scope="col">Revenue</th></tr></thead><tbody>@foreach (var month in report.Monthly) { <tr><td>@month.Date.ToString("MMM yyyy")</td><td>@month.PaidOrders</td><td>@ReportDisplay.Money(month.RevenueCents)</td></tr> }</tbody></table>
-        </div>
-    </section>
-    <section class="portal-card mb-4">
-        <h2 class="h4">Sales by collecting cashier</h2>
-        <div class="table-responsive" tabindex="0" role="region" aria-label="Cashier sales">
-            <table class="table"><thead><tr><th scope="col">Cashier</th><th scope="col">Paid orders</th><th scope="col">Revenue</th><th scope="col">Cash received</th><th scope="col">Change</th></tr></thead><tbody>@foreach (var cashier in report.Cashiers) { <tr><td>@cashier.Name (#@cashier.StaffId)</td><td>@cashier.PaidOrders</td><td>@ReportDisplay.Money(cashier.RevenueCents)</td><td>@ReportDisplay.Money(cashier.CashReceivedCents)</td><td>@ReportDisplay.Money(cashier.ChangeCents)</td></tr> }</tbody></table>
-        </div>
-    </section>
-    <section class="portal-card">
-        <h2 class="h4">Best-selling products</h2><p class="text-muted small">Top 20 by units sold. Revenue uses stored sale-time line subtotals. A historical sold name labels each product.</p>
-        <div class="table-responsive" tabindex="0" role="region" aria-label="Best-selling products">
-            <table class="table"><thead><tr><th scope="col">Product</th><th scope="col">Quantity sold</th><th scope="col">Revenue</th></tr></thead><tbody>@foreach (var product in report.Products) { <tr><td>@product.Name (#@product.ProductId)</td><td>@product.Quantity</td><td>@ReportDisplay.Money(product.RevenueCents)</td></tr> }</tbody></table>
-        </div>
-    </section>
-    <p class="text-muted small mt-3">Cash payments only. Discounts, taxes and refunds are not configured. Product totals shown are the top 20, not an additional revenue total.</p>
+@using System.Globalization
+@{
+    ViewData["Title"] = "Sales Reports";
+    var today = ReportDisplay.Today;
+    var monthStart = new DateOnly(today.Year,today.Month,1);
 }
+<link rel="stylesheet" href="~/css/reports.css" asp-append-version="true" />
+<div class="report-workspace">
+    <header class="report-heading"><div><p class="report-eyebrow">INSIGHTS FOR YOUR NEXT GOOD DAY</p><h1>Sales Reports</h1><p class="text-muted mb-0">Understand your sales, your team and the cups your customers love.</p></div><div class="report-header-actions"><a asp-page="/Dashboard/Index" class="btn btn-outline-primary">Dashboard</a>@if (Model.Report is not null) { <button type="button" id="printSalesReport" class="btn btn-outline-primary">Print report</button><a asp-page-handler="Export" asp-route-From="@Model.From.ToString("yyyy-MM-dd")" asp-route-To="@Model.To.ToString("yyyy-MM-dd")" class="btn btn-primary">Export CSV <span aria-hidden="true">&#8599;</span></a> }</div></header>
+    <section class="report-panel report-filter-panel" aria-labelledby="dateHeading">
+        <div class="report-section-heading"><div><h2 id="dateHeading">Choose your reporting period</h2><p>Completed cash payments &#183; USD &#183; Asia/Bangkok (UTC+07:00)</p></div><nav class="report-presets" aria-label="Quick reporting periods">
+            <a asp-page="./Index" asp-route-From="@today.ToString("yyyy-MM-dd")" asp-route-To="@today.ToString("yyyy-MM-dd")" class="@(Model.From == today && Model.To == today ? "is-active" : "")">Today</a>
+            <a asp-page="./Index" asp-route-From="@today.AddDays(-6).ToString("yyyy-MM-dd")" asp-route-To="@today.ToString("yyyy-MM-dd")" class="@(Model.From == today.AddDays(-6) && Model.To == today ? "is-active" : "")">Last 7 days</a>
+            <a asp-page="./Index" asp-route-From="@monthStart.ToString("yyyy-MM-dd")" asp-route-To="@today.ToString("yyyy-MM-dd")" class="@(Model.From == monthStart && Model.To == today ? "is-active" : "")">This month</a>
+        </nav></div>
+        <form method="get" asp-page="./Index" id="salesReportFilter" class="report-date-form"><div><label asp-for="From">From</label><input asp-for="From" type="date" class="form-control" required /></div><span class="report-date-arrow" aria-hidden="true">&#8594;</span><div><label asp-for="To">To (inclusive)</label><input asp-for="To" type="date" class="form-control" required /></div><button type="submit" class="btn btn-primary">Apply dates</button><p>Maximum 366 days. Revenue follows payment confirmation, not order creation.</p></form>
+    </section>
+    @if (Model.ErrorMessage is not null) { <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div> }
+    @if (Model.Report is { } report)
+    {
+        <div class="report-period"><span class="report-period-label">SELECTED PERIOD</span><strong>@report.From.ToString("dd MMM yyyy",CultureInfo.InvariantCulture) &#8212; @report.To.ToString("dd MMM yyyy",CultureInfo.InvariantCulture)</strong><span class="report-chip">Confirmed cash only</span></div>
+        <section class="report-kpis" aria-label="Selected period totals">
+            <article class="report-kpi"><div><h2>Revenue</h2><span class="report-kpi-icon" aria-hidden="true">$</span></div><p class="report-value">@ReportDisplay.Money(report.RevenueCents)</p><small>Confirmed sales, excluding opening float</small></article>
+            <article class="report-kpi"><div><h2>Paid orders</h2><span class="report-kpi-icon" aria-hidden="true">&#10003;</span></div><p class="report-value">@report.PaidOrders.ToString("N0")</p><small>Completed cash payments</small></article>
+            <article class="report-kpi"><div><h2>Cash received</h2><span class="report-kpi-icon" aria-hidden="true">&#8595;</span></div><p class="report-value">@ReportDisplay.Money(report.CashReceivedCents)</p><small>Before returning customer change</small></article>
+            <article class="report-kpi"><div><h2>Change given</h2><span class="report-kpi-icon" aria-hidden="true">&#8593;</span></div><p class="report-value">@ReportDisplay.Money(report.ChangeCents)</p><small>Returned to customers</small></article>
+        </section>
+        @if (report.PaidOrders == 0) { <div class="report-no-sales" role="status"><span aria-hidden="true"><partial name="/Pages/Shared/_CafeMark.cshtml" /></span><div><h2>A quiet period, ready for your next cup.</h2><p>No completed payments in this period. Try another date range to explore your sales.</p></div></div> }
+        <div class="report-main-grid">
+            <section class="report-panel" aria-labelledby="dailyHeading"><div class="report-section-heading"><div><p class="report-eyebrow">THE DAILY PICTURE</p><h2 id="dailyHeading">Daily revenue</h2></div><span class="report-chip">USD</span></div><p class="report-explainer">Only dates with completed sales are shown. Bar lengths compare with the highest daily revenue in this selected period.</p>
+                @if (report.Daily.Count > 0)
+                {
+                    var max = Math.Max(1L,report.Daily.Max(d => d.RevenueCents));
+                    <div class="report-chart" role="list" aria-label="Daily sales chart" tabindex="0">
+                    @foreach (var day in report.Daily)
+                    {
+                        var width = (day.RevenueCents * 100m / max).ToString("0.##",CultureInfo.InvariantCulture);
+                        <div class="report-bar-row" role="listitem"><div class="report-day"><strong>@day.Date.ToString("dd MMM",CultureInfo.InvariantCulture)</strong><small>@day.Date.ToString("ddd, yyyy",CultureInfo.InvariantCulture)</small></div><div class="report-bar-track" aria-hidden="true"><span class="report-bar" style="width: @(width)%"></span></div><div class="report-day-value"><strong>@ReportDisplay.Money(day.RevenueCents)</strong><small>@day.PaidOrders.ToString("N0") paid orders</small></div></div>
+                    }
+                    </div>
+                }
+                else { <div class="report-empty"><h3>No sales to chart</h3><p>Daily figures appear after a completed cash payment.</p></div> }
+            </section>
+            <aside class="report-panel report-cash-summary"><p class="report-eyebrow">FOLLOW THE CASH</p><h2>What stayed in the drawer?</h2><p class="report-net">@ReportDisplay.Money(report.NetCashCents)<small>Net cash retained from sales</small></p><dl><div><dt>Cash received</dt><dd>@ReportDisplay.Money(report.CashReceivedCents)</dd></div><div><dt>Less change given</dt><dd>@ReportDisplay.Money(report.ChangeCents)</dd></div></dl><p class="report-cash-note">Opening float is excluded. This is net sales cash, not the expected full drawer at shift close.</p><a asp-page="/Shifts/Index" class="report-text-link">Review shift drawers <span aria-hidden="true">&#8599;</span></a></aside>
+        </div>
+        <section class="report-panel" aria-labelledby="cashierHeading"><div class="report-section-heading"><div><p class="report-eyebrow">YOUR TEAM'S CONTRIBUTION</p><h2 id="cashierHeading">Sales by collecting cashier</h2></div><span class="report-chip">@report.Cashiers.Count cashiers</span></div>
+            @if (report.Cashiers.Count == 0) { <div class="report-empty"><h3>No cashier sales yet</h3><p>Completed payments will be attributed to the cashier who collected them.</p></div> }
+            else { <div class="table-responsive report-table-wrap" tabindex="0" role="region" aria-label="Cashier sales"><table class="table report-table align-middle"><caption class="visually-hidden">Collecting cashier results for the selected dates</caption><thead><tr><th scope="col">Cashier</th><th scope="col" class="text-end">Paid orders</th><th scope="col" class="text-end">Revenue</th><th scope="col" class="text-end">Cash received</th><th scope="col" class="text-end">Change</th></tr></thead><tbody>@foreach (var cashier in report.Cashiers) { <tr><th scope="row"><div class="report-person"><span aria-hidden="true">@(string.IsNullOrWhiteSpace(cashier.Name) ? "?" : cashier.Name.Trim()[..1].ToUpperInvariant())</span><div><strong>@cashier.Name</strong><small>Staff #@cashier.StaffId</small></div></div></th><td class="text-end">@cashier.PaidOrders.ToString("N0")</td><td class="text-end report-money">@ReportDisplay.Money(cashier.RevenueCents)</td><td class="text-end">@ReportDisplay.Money(cashier.CashReceivedCents)</td><td class="text-end">@ReportDisplay.Money(cashier.ChangeCents)</td></tr> }</tbody></table></div> }
+        </section>
+        <div class="report-bottom-grid">
+            <section class="report-panel" aria-labelledby="monthlyHeading"><div class="report-section-heading"><div><p class="report-eyebrow">A WIDER VIEW</p><h2 id="monthlyHeading">Monthly revenue</h2></div></div><p class="report-explainer">Boundary months cover only dates inside your selected period.</p>
+                @if (report.Monthly.Count == 0) { <div class="report-empty"><h3>No monthly sales</h3><p>Try a period with confirmed payments.</p></div> }
+                else { <div class="table-responsive report-table-wrap" tabindex="0" role="region" aria-label="Monthly revenue"><table class="table report-table"><thead><tr><th scope="col">Month</th><th scope="col" class="text-end">Paid orders</th><th scope="col" class="text-end">Revenue</th></tr></thead><tbody>@foreach (var month in report.Monthly) { <tr><th scope="row">@month.Date.ToString("MMM yyyy",CultureInfo.InvariantCulture)</th><td class="text-end">@month.PaidOrders.ToString("N0")</td><td class="text-end report-money">@ReportDisplay.Money(month.RevenueCents)</td></tr> }</tbody></table></div> }
+            </section>
+            <section class="report-panel" aria-labelledby="productsHeading"><div class="report-section-heading"><div><p class="report-eyebrow">CUSTOMER FAVORITES</p><h2 id="productsHeading">Best-selling products</h2></div><span class="report-chip">Top 20</span></div><p class="report-explainer">Ranked by units sold. Historical names and sale-time line subtotals are retained.</p>
+                @if (report.Products.Count == 0) { <div class="report-empty"><h3>Favorites in the making</h3><p>Best sellers appear after completed payments.</p></div> }
+                else { var rank = 0; <div class="table-responsive report-table-wrap" tabindex="0" role="region" aria-label="Best-selling products"><table class="table report-table"><thead><tr><th scope="col">Product</th><th scope="col" class="text-end">Qty sold</th><th scope="col" class="text-end">Revenue</th></tr></thead><tbody>@foreach (var product in report.Products) { rank++; <tr><th scope="row"><div class="report-product"><span class="report-rank">@rank</span><div><strong>@product.Name</strong><small>Product #@product.ProductId</small></div></div></th><td class="text-end">@product.Quantity.ToString("N0")</td><td class="text-end report-money">@ReportDisplay.Money(product.RevenueCents)</td></tr> }</tbody></table></div> }
+            </section>
+        </div>
+        <footer class="report-footnote"><p><strong>How to read this report</strong><br />Cash payments only. Discounts, taxes and refunds are not configured. Product rows show the top 20, not an additional revenue total. Bakong test confirmations are excluded.</p><p>Generated @ReportDisplay.Local(report.GeneratedAtUtc) (UTC+07:00).</p></footer>
+    }
+</div>
 @section Scripts { <script src="~/js/reports.js" asp-append-version="true"></script> }

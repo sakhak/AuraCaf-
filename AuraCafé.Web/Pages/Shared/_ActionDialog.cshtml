@@ -1,0 +1,10 @@
+@* Buttons explicitly close the native dialog; no form submission is involved. *@
+<dialog id="auraActionDialog" class="aura-action-dialog" aria-labelledby="auraDialogTitle" aria-describedby="auraDialogMessage">
+    <div class="aura-dialog-body">
+        <div class="aura-dialog-top"><span class="aura-dialog-icon" aria-hidden="true"><partial name="/Pages/Shared/_CafeMark.cshtml" /></span><button type="button" class="aura-dialog-dismiss" id="auraDialogDismiss" aria-label="Close dialog">&#215;</button></div>
+        <p class="aura-dialog-eyebrow">AURA CAF&#201;</p>
+        <h2 id="auraDialogTitle">One quick check</h2>
+        <p id="auraDialogMessage"></p>
+        <div class="aura-dialog-actions"><button type="button" id="auraDialogCancel" class="btn btn-outline-secondary">Go back</button><button type="button" id="auraDialogConfirm" class="btn btn-primary">Continue</button></div>
+    </div>
+</dialog>

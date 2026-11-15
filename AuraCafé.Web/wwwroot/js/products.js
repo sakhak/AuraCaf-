@@ -30,9 +30,4 @@
         img.addEventListener("error", () => { img.hidden = true; });
         if (img.complete && img.naturalWidth === 0) img.hidden = true;
     });
-    document.querySelectorAll("[data-confirm-deactivate]").forEach(form => {
-        form.addEventListener("submit", event => {
-            if (!confirm("Deactivate this product? It will no longer be available for new orders. Historical orders will be retained.")) event.preventDefault();
-        });
-    });
 })();

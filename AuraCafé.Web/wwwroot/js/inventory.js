@@ -1,7 +1,7 @@
 document.querySelectorAll("[data-inventory-confirm], [data-inventory-submit]").forEach(form => {
     let submitting = false;
     form.addEventListener("submit", event => {
-        if (submitting || (form.dataset.inventoryConfirm && !confirm(form.dataset.inventoryConfirm))) { event.preventDefault(); return; }
+        if (submitting) { event.preventDefault(); return; }
         submitting = true;
         form.setAttribute("aria-busy", "true");
         form.querySelectorAll("button[type=submit]").forEach(button => { button.disabled = true; button.textContent = "Processing..."; });
