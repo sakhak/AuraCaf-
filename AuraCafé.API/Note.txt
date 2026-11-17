@@ -1,7 +1,10 @@
 dotnet restore
 dotnet build
 
-dotnet run --project AuraCafé.API --urls http://localhost:5100
+Run the API first and keep this terminal running:
+dotnet run --project AuraCafé.API --launch-profile http
+
+In a second terminal, run the Razor Pages web app:
 dotnet run --project AuraCafé.Web --urls http://localhost:5200
 
 =============== Run these commands to store development secrets ===============
@@ -12,10 +15,8 @@ dotnet user-secrets set "Jwt:Key" "REPLACE_WITH_A_RANDOM_64_CHARACTER_SECRET" --
 
 dotnet user-secrets set "SeedAdmin:Email" "admin@auracafe.local" --project AuraCafé.API
 
-dotnet user-secrets set "SeedAdmin:Password" "Admin@!123" --project AuraCafé.API
-
 admin pw:
-dotnet user-secrets set "SeedAdmin:Password" "Admin@!1234567890" --project .
+dotnet user-secrets set "SeedAdmin:Password" "Admin@!1234567890" --project AuraCafé.API
 
 =============== Generate a random JWT key using PowerShell ===============
 $bytes = [byte[]]::new(48)
@@ -36,11 +37,62 @@ dotnet ef migrations add AddStaffManagement --project AuraCafé.API --startup-pr
 dotnet ef database update --project AuraCafé.API --startup-project AuraCafé.API
 
 
+dotnet ef migrations --project 
+
+
 dotnet build AuraCafé.API
 dotnet build AuraCafé.Web
+
+
+=============== Troubleshooting API connection errors ===============
+
+If the web app says "actively refused localhost:5100", the API is not
+running. Start it first and keep the terminal open:
+
+dotnet run --project AuraCafé.API --launch-profile http
+
+The API must show this message before starting the web app:
+
+Now listening on: http://localhost:5100
+
+Then open a second terminal and start the Razor Pages web app:
+
+dotnet run --project AuraCafé.Web --urls http://localhost:5200
+
+Check whether the API port is open:
+
+Test-NetConnection localhost -Port 5100
+
+The result must show:
+
+TcpTestSucceeded : True
+
+If the API stops with a password error, set a password with at least
+12 characters, including uppercase, lowercase, a number, and a symbol:
+
+dotnet user-secrets set "SeedAdmin:Password" "Admin@!1234567890" --project AuraCafé.API
+
+If port 5100 is already in use, find the process using it:
+
+Get-NetTCPConnection -LocalPort 5100 -ErrorAction SilentlyContinue
+
+Stop that application or use the already-running API. Do not close the
+API terminal while using the web application.
 
 
 New-Item -ItemType Directory -Force -Path ".\Backups"
 
 dotnet ef migrations add AddOrderManagement --project AuraCafé.API --startup-project AuraCafé.API
 dotnet ef database update --project AuraCafé.API --startup-project AuraCafé.API
+
+
+dotnet build
+dotnet build .\AuraCafé.API.csproj
+Get-ChildItem *.csproj
+dotnet ef migrations --project
+dotnet ef database update
+
+dotnet ef database update
+dotnet user-secrets list
+
+dotnet tool update --global dotnet-ef --version 10.0.15
